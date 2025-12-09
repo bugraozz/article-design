@@ -1,0 +1,8 @@
+.btn {
+  @apply px-3 py-1 bg-white border rounded hover:bg-gray-200 transition;
+}
+
+
+body {
+  background: #f5f6f7;
+}

@@ -1,0 +1,128 @@
+.tiptap-popup {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #ddd;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: flex;
+  gap: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 9999;
+}
+
+.tiptap-popup button {
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.tiptap-popup button:hover {
+  background: #f0f0f0;
+}
+
+/* Tiptap Content Area - Modern Word-like */
+.tiptap-content-editor {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  letter-spacing: 0.3px;
+}
+
+.tiptap-content-editor p {
+  margin: 0.8em 0;
+  line-height: 1.6;
+}
+
+.tiptap-content-editor h1,
+.tiptap-content-editor h2,
+.tiptap-content-editor h3,
+.tiptap-content-editor h4,
+.tiptap-content-editor h5,
+.tiptap-content-editor h6 {
+  font-weight: 600;
+  margin: 1.2em 0 0.6em 0;
+  line-height: 1.4;
+  color: #1f2937;
+}
+
+.tiptap-content-editor h1 { font-size: 2em; }
+.tiptap-content-editor h2 { font-size: 1.6em; }
+.tiptap-content-editor h3 { font-size: 1.4em; }
+.tiptap-content-editor h4 { font-size: 1.2em; }
+
+.tiptap-content-editor ul {
+  list-style: disc;
+  padding-left: 2em;
+  margin: 0.8em 0;
+}
+
+.tiptap-content-editor ol {
+  list-style: decimal;
+  padding-left: 2em;
+  margin: 0.8em 0;
+}
+
+.tiptap-content-editor li {
+  margin: 0.4em 0;
+  line-height: 1.6;
+}
+
+.tiptap-content-editor strong {
+  font-weight: 600;
+  color: #111;
+}
+
+.tiptap-content-editor em {
+  font-style: italic;
+}
+
+.tiptap-content-editor u {
+  text-decoration: underline;
+  text-decoration-color: #3b82f6;
+  text-underline-offset: 2px;
+}
+
+.tiptap-content-editor code {
+  background: #f3f4f6;
+  padding: 0.3em 0.5em;
+  border-radius: 3px;
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 0.9em;
+  color: #d97706;
+}
+
+.tiptap-content-editor pre {
+  background: #1f2937;
+  color: #e5e7eb;
+  padding: 1em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.tiptap-content-editor blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.tiptap-content-editor a {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tiptap-content-editor a:hover {
+  color: #1d4ed8;
+}
+
+.tiptap-content-editor mark {
+  background-color: #fef08a;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+}

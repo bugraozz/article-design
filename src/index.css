@@ -1,0 +1,300 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tiptap Editor */
+.tiptap-editor-content {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tiptap-editor-content .ProseMirror {
+  outline: none;
+  width: 100%;
+  min-height: 30px;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  padding: 0;
+  margin: 0;
+}
+
+.tiptap-editor-content p {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  word-wrap: break-word;
+}
+
+/* TABLE STYLING - Tiptap & HTML Tablolar */
+
+/* HTML Tablolar (dangerouslySetInnerHTML) */
+table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 15px 0 !important;
+  border: 2px solid #d1d5db !important;
+}
+
+table thead {
+  background-color: #f3f4f6 !important;
+}
+
+table thead th {
+  border: 1px solid #d1d5db !important;
+  padding: 14px 16px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  background-color: #f3f4f6 !important;
+  font-size: 14px !important;
+}
+
+table tbody td {
+  border: 1px solid #d1d5db !important;
+  padding: 12px 16px !important;
+  text-align: left !important;
+  background-color: #ffffff !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+}
+
+table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+table tbody tr:nth-child(odd) {
+  background-color: #fafbfc !important;
+}
+
+table tbody tr:hover {
+  background-color: #f0f4ff !important;
+}
+
+table tbody tr:nth-child(even):hover {
+  background-color: #eef2ff !important;
+}
+
+/* Tiptap ProseMirror Table */
+.tiptap-editor-content .ProseMirror table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 15px 0 !important;
+  border: 2px solid #d1d5db !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.tiptap-editor-content .ProseMirror table thead {
+  background-color: #f3f4f6 !important;
+}
+
+.tiptap-editor-content .ProseMirror table thead th {
+  border: 1px solid #d1d5db !important;
+  padding: 14px 16px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  background-color: #f3f4f6 !important;
+  font-size: 14px !important;
+}
+
+.tiptap-editor-content .ProseMirror table tbody td {
+  border: 1px solid #d1d5db !important;
+  padding: 12px 16px !important;
+  text-align: left !important;
+  background-color: #ffffff !important;
+  font-size: 14px !important;
+  color: #374151 !important;
+}
+
+.tiptap-editor-content .ProseMirror table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.tiptap-editor-content .ProseMirror table tbody tr:nth-child(odd) {
+  background-color: #fafbfc !important;
+}
+
+.tiptap-editor-content .ProseMirror table tbody tr:hover {
+  background-color: #f0f4ff !important;
+}
+
+.tiptap-editor-content .ProseMirror table tbody tr:nth-child(even):hover {
+  background-color: #eef2ff !important;
+}
+
+/* Hücre seçimi - Mavi highlight */
+.tiptap-editor-content .ProseMirror .selectedCell {
+  background-color: #dbeafe !important;
+}
+
+.tiptap-editor-content .ProseMirror table tbody td.selectedCell {
+  background-color: #dbeafe !important;
+}
+
+/* Tiptap varsayılan border override */
+.tiptap-editor-content .ProseMirror table,
+.tiptap-editor-content .ProseMirror table th,
+.tiptap-editor-content .ProseMirror table td {
+  border: 1px solid #d1d5db !important;
+  border-collapse: collapse !important;
+}
+
+/* Export & Display Styles */
+.tiptap-editor-content,
+#a4-page {
+  background-color: white;
+  color: black;
+}
+
+/* Text Overlay Display - Styling */
+.text-overlay-display {
+  color: var(--default-text-color, #000000);
+}
+
+/* TipTap Color & TextStyle - Inline Styles Support */
+/* CRITICAL: Allow inline color styles to override parent color */
+.text-overlay-display span[style*="color:"] {
+  color: revert;
+}
+
+/* Mark tag styling - for colored text */
+mark {
+  background-color: transparent;
+  color: inherit;
+}
+
+.text-overlay-display mark {
+  background-color: transparent;
+  color: revert;
+}
+
+.ProseMirror mark {
+  background-color: transparent;
+}
+
+.tiptap-editor-content table,
+#a4-page table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 10px 0 !important;
+  border: 1px solid #d1d5db !important;
+  background-color: white !important;
+}
+
+.tiptap-editor-content table thead,
+#a4-page table thead {
+  background-color: #f3f4f6 !important;
+  display: table-header-group;
+}
+
+.tiptap-editor-content table thead th,
+#a4-page table thead th {
+  border: 1px solid #d1d5db !important;
+  padding: 12px 14px !important;
+  text-align: left !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  background-color: #f3f4f6 !important;
+  font-size: 13px !important;
+}
+
+.tiptap-editor-content table tbody td,
+#a4-page table tbody td {
+  border: 1px solid #d1d5db !important;
+  padding: 10px 12px !important;
+  text-align: left !important;
+  background-color: white !important;
+  font-size: 13px !important;
+  color: #374151 !important;
+}
+
+.tiptap-editor-content table tbody tr,
+#a4-page table tbody tr {
+  page-break-inside: avoid;
+}
+
+.tiptap-editor-content table tbody tr:nth-child(odd),
+#a4-page table tbody tr:nth-child(odd) {
+  background-color: #fafbfc !important;
+}
+
+/* Print Media */
+@media print {
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+    border: 1px solid #d1d5db !important;
+    page-break-inside: avoid;
+  }
+
+  table thead {
+    background-color: #f3f4f6 !important;
+    display: table-header-group;
+    page-break-inside: avoid;
+  }
+
+  table thead th {
+    border: 1px solid #d1d5db !important;
+    padding: 12px 14px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+    color: #1f2937 !important;
+    background-color: #f3f4f6 !important;
+  }
+
+  table tbody td {
+    border: 1px solid #d1d5db !important;
+    padding: 10px 12px !important;
+    text-align: left !important;
+    background-color: white !important;
+    color: #374151 !important;
+  }
+
+  table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  table tbody tr:nth-child(odd) {
+    background-color: #fafbfc !important;
+  }
+}
+
+/* Canvas export */
+canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Text Overlay Display - Makale Ayarlarını Override Et */
+.text-overlay-display * {
+  font-size: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+}
+
+.text-overlay-display p {
+  margin: 0 !important;
+  padding: 0 !important;
+  text-indent: inherit !important;
+}
+
+.text-overlay-display h1,
+.text-overlay-display h2,
+.text-overlay-display h3,
+.text-overlay-display h4,
+.text-overlay-display h5,
+.text-overlay-display h6 {
+  font-size: var(--heading-font-size, inherit) !important;
+  color: var(--heading-color, inherit) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: inherit !important;
+}
+
