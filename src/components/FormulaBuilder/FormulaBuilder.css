@@ -1,0 +1,137 @@
+/* Formula Builder Styles */
+
+.formula-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 4px;
+}
+
+.formula-btn:hover {
+  border-color: #9333ea;
+  background: #faf5ff;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.1);
+}
+
+.formula-btn span {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.formula-btn small {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Formula Element */
+.formula-element {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.formula-element:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.formula-element.selected {
+  border-color: #9333ea;
+  background: #faf5ff;
+  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+.formula-element-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formula-element-index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #9333ea;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.formula-element-type {
+  flex: 1;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.formula-element-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.formula-control-btn {
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formula-control-btn:hover:not(:disabled) {
+  border-color: #9333ea;
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.formula-control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.formula-control-btn.delete {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.formula-control-btn.delete:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.formula-element-content {
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}

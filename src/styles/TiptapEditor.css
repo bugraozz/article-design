@@ -126,3 +126,306 @@
   padding: 0.1em 0.2em;
   border-radius: 2px;
 }
+
+/* Matematik Sembolleri Desteği */
+.tiptap-content-editor {
+  font-feature-settings: normal;
+}
+
+/* Toplam sembolü ve diğer matematik sembolleri için line-height artır */
+.text-overlay-display {
+  line-height: 1.8;
+}
+
+.text-overlay-display *,
+.tiptap-editor-content * {
+  line-height: inherit;
+  font-feature-settings: normal;
+  font-variant-numeric: normal;
+}
+
+/* Kök işareti ve diğer semboller için özel ayarlar */
+.text-overlay-display,
+.tiptap-editor-content {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* MathML Styling - Native Browser Rendering */
+
+/* Base math element */
+math {
+  display: inline-block !important;
+  margin: 2px 4px;
+  font-size: 1em;
+  font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Text nodes in MathML */
+math mi {
+  font-style: italic;
+  font-size: inherit;
+  font-weight: normal;
+}
+
+math mo {
+  font-style: normal;
+  font-size: inherit;
+  margin: 0 2px;
+}
+
+math mn {
+  font-style: normal;
+  font-size: inherit;
+}
+
+math mtext {
+  font-style: normal;
+  font-size: inherit;
+}
+
+/* Row grouping */
+math mrow {
+  display: inline;
+  font-size: inherit;
+}
+
+/* Fractions */
+math mfrac {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+math mfrac > * {
+  display: block;
+  text-align: center;
+  padding: 2px 4px;
+}
+
+math mfrac > :first-child {
+  border-bottom: 1px solid currentColor;
+}
+
+/* Superscript and subscript */
+math msup,
+math msub,
+math msubsup {
+  display: inline-block;
+  vertical-align: baseline;
+  margin: 0 1px;
+}
+
+/* Square root */
+math msqrt {
+  display: inline-block;
+  position: relative;
+  padding-left: 8px;
+  border-top: 2px solid currentColor;
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+msqrt::before {
+  content: "√";
+  position: absolute;
+  left: -10px;
+  font-size: 1.2em;
+  line-height: 0.8;
+}
+
+/* N-th root */
+math mroot {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+}
+
+/* Limits (under/over operators) */
+math munder,
+math mover,
+math munderover {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: center;
+}
+
+/* Accent */
+math maccent {
+  display: inline;
+}
+
+/* Radical sign for radicals */
+math menclose {
+  display: inline-block;
+}
+
+/* Style for operators like sum, product */
+math mo[largeop] {
+  font-size: 1.2em;
+}
+
+/* Display mode MathML - block context */
+.text-overlay-display math[display="block"],
+.tiptap-editor-content math[display="block"] {
+  display: block !important;
+  margin: 12px 0 !important;
+  font-size: 18px;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.text-overlay-display math[display="inline"],
+.tiptap-editor-content math[display="inline"] {
+  display: inline-block !important;
+  font-size: inherit;
+}
+
+/* Ensure math elements don't break text flow */
+.text-overlay-display math,
+.tiptap-editor-content math {
+  word-break: break-word;
+}
+
+/* ===== MathJax Professional Styling ===== */
+
+/* MathJax Container */
+.MathJax {
+  display: inline-block !important;
+  padding: 0 2px;
+  vertical-align: middle;
+  font-size: 1em;
+}
+
+.MathJax > mjx-container {
+  display: inline-block;
+}
+
+.MathJax mjx-container[display="true"] {
+  display: block;
+  text-align: center;
+  margin: 0.8em 0;
+  padding: 0.5em 0;
+}
+
+/* Math Display Mode */
+.text-overlay-display .MathJax[display="true"],
+.text-overlay-display .MathJax mjx-container[display="true"],
+.tiptap-editor-content .MathJax[display="true"],
+.tiptap-editor-content .MathJax mjx-container[display="true"] {
+  display: block !important;
+  text-align: center;
+  margin: 1em 0;
+}
+
+/* Math Text Elements */
+mjx-mi {
+  font-style: italic;
+  font-family: "STIX Two Math", "Cambria Math", serif;
+}
+
+mjx-mo {
+  margin: 0 0.1em;
+}
+
+mjx-mn {
+  font-family: "STIX Two Math", "Cambria Math", serif;
+}
+
+/* Fractions */
+mjx-frac {
+  display: inline-block;
+  vertical-align: -0.5em;
+}
+
+/* Superscript and Subscript */
+mjx-sup {
+  vertical-align: 0.4em;
+  font-size: 0.8em;
+}
+
+mjx-sub {
+  vertical-align: -0.4em;
+  font-size: 0.8em;
+}
+
+/* Radicals (Square roots) */
+mjx-root {
+  vertical-align: -0.15em;
+}
+
+/* Large operators */
+mjx-munder,
+mjx-mover,
+mjx-munderover {
+  display: inline-block;
+}
+
+/* Over/Under elements */
+mjx-over {
+  display: block;
+  font-size: 0.8em;
+}
+
+mjx-under {
+  display: block;
+  font-size: 0.8em;
+}
+
+/* Array/Matrix */
+mjx-mtable {
+  display: inline-table;
+  border-collapse: collapse;
+  margin: 0 2px;
+}
+
+mjx-mtr {
+  display: table-row;
+}
+
+mjx-mtd {
+  display: table-cell;
+  padding: 0 0.5em;
+}
+
+/* Fix stretchy operators */
+mjx-mo[stretchy="true"] {
+  font-size: 1.4em;
+}
+
+/* Professional spacing */
+.text-overlay-display .MathJax,
+.tiptap-editor-content .MathJax {
+  letter-spacing: 0.02em;
+}
+
+/* Improve rendering quality */
+.text-overlay-display mjx-container,
+.tiptap-editor-content mjx-container {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Make formulas scale responsively */
+@media (max-width: 768px) {
+  .MathJax {
+    font-size: 0.95em;
+  }
+  
+  .text-overlay-display .MathJax[display="true"],
+  .tiptap-editor-content .MathJax[display="true"] {
+    margin: 0.5em 0;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  mjx-mi,
+  mjx-mo,
+  mjx-mn {
+    color: #e4e4e7;
+  }
+}
+

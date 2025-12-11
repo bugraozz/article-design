@@ -1,0 +1,105 @@
+/* Formula Editor Overlay Styles */
+
+.formula-editor-element {
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  padding: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.formula-editor-element:hover {
+  border-color: #cbd5e1;
+  background: #f9fafb;
+}
+
+.formula-editor-element.selected {
+  border-color: #10b981;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.formula-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.formula-editor-index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #10b981;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.formula-editor-type {
+  flex: 1;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.formula-editor-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.formula-editor-btn {
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formula-editor-btn:hover:not(:disabled) {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.formula-editor-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.formula-editor-btn.delete {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.formula-editor-btn.delete:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.formula-editor-content {
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}

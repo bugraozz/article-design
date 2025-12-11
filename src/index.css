@@ -1,3 +1,6 @@
+/* KaTeX Styles - Must be first */
+@import 'katex/dist/katex.min.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -296,5 +299,198 @@ canvas {
   margin: 0 !important;
   padding: 0 !important;
   line-height: inherit !important;
+}
+
+/* ================================
+   MATEMATİK DENKLEMLERİ STİLLERİ
+   ================================ */
+
+/* Inline matematik sembolleri */
+.math-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
+  padding: 2px 4px;
+  background-color: rgba(147, 51, 234, 0.05);
+  border-radius: 3px;
+  font-family: 'KaTeX_Math', 'Times New Roman', serif;
+  transition: background-color 0.2s;
+}
+
+.math-inline:hover {
+  background-color: rgba(147, 51, 234, 0.1);
+}
+
+/* Block matematik denklemleri */
+.math-block {
+  display: block;
+  text-align: center;
+  margin: 15px 0;
+  padding: 12px;
+  background-color: rgba(79, 70, 229, 0.03);
+  border-left: 3px solid #818cf8;
+  border-radius: 5px;
+  font-family: 'KaTeX_Math', 'Times New Roman', serif;
+  transition: all 0.2s;
+}
+
+.math-block:hover {
+  background-color: rgba(79, 70, 229, 0.06);
+  border-left-color: #6366f1;
+}
+
+/* KaTeX içeriği için */
+.katex {
+  font-size: 1.1em !important;
+}
+
+.katex-display {
+  margin: 15px 0 !important;
+}
+
+/* MathML desteği */
+math {
+  display: inline-block;
+  font-family: 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', serif;
+}
+
+math[display="block"] {
+  display: block;
+  text-align: center;
+  margin: 15px 0;
+}
+
+/* Düzenlenebilir matematik alanları */
+.math-editable,
+.math-inline.katex-rendered,
+.math-block.katex-rendered {
+  position: relative;
+  cursor: pointer;
+  border: 1px dashed transparent;
+  transition: all 0.2s;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.math-editable:hover,
+.math-inline.katex-rendered:hover,
+.math-block.katex-rendered:hover {
+  border-color: #818cf8;
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+.math-editable.active,
+.math-inline.katex-rendered:active,
+.math-block.katex-rendered:active {
+  border-color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Tiptap editor içinde matematik düğümleri */
+.ProseMirror .math-inline.katex-rendered,
+.ProseMirror .math-block.katex-rendered {
+  user-select: none;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.ProseMirror .math-block.katex-rendered {
+  display: block;
+  text-align: center;
+  margin: 10px 0;
+}
+
+/* Çift tıklama ipucu */
+.math-inline.katex-rendered::after,
+.math-block.katex-rendered::after {
+  content: '✏️ Çift tıkla düzenle';
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #6b7280;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+.math-inline.katex-rendered:hover::after,
+.math-block.katex-rendered:hover::after {
+  opacity: 1;
+}
+
+/* Math Edit Popup Styles */
+.math-edit-popup {
+  animation: popupFadeIn 0.2s ease-out;
+}
+
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.math-edit-popup textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.math-edit-popup button:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.math-edit-popup button:active {
+  transform: scale(0.98);
+}
+
+/* Matematik sembolleri için özel fontlar - KaTeX kendi fontlarını sağlar */
+
+/* Unicode matematik sembolleri */
+.math-symbol {
+  font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', serif;
+  font-size: 1.2em;
+}
+
+/* LaTeX komutları korumalı gösterim */
+[data-latex] {
+  position: relative;
+}
+
+[data-latex]::before {
+  content: attr(data-latex);
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 10px;
+  color: #9ca3af;
+  opacity: 0;
+  transition: opacity 0.2s;
+  font-family: 'Courier New', monospace;
+  background: white;
+  padding: 2px 4px;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  white-space: nowrap;
+  z-index: 100;
+}
+
+[data-latex]:hover::before {
+  opacity: 1;
 }
 

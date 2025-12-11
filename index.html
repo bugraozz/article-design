@@ -5,6 +5,32 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>article-design</title>
+    <!-- MathJax Configuration -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$']],
+          displayMath: [['$$', '$$']],
+          processEscapes: false,
+          processEnvironments: true
+        },
+        chtml: {
+          fontURL: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/output/chtml/fonts/woff-v2',
+          scale: 1.1,
+          displayAlign: 'center'
+        },
+        startup: {
+          pageReady: () => {
+            console.log('[MathJax] Page ready, typesetting...');
+            return MathJax.typesetPromise().catch(err => {
+              console.error('[MathJax] Error:', err);
+            });
+          }
+        }
+      };
+    </script>
+    <!-- MathJax Library -->
+    <script id="mathjax" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
   </head>
   <body>
     <div id="root"></div>

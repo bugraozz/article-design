@@ -2,7 +2,29 @@
   @apply px-3 py-1 bg-white border rounded hover:bg-gray-200 transition;
 }
 
-
 body {
-  background: #f5f6f7;
+  background: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
+
+/* Fallback CSS variables */
+.text-overlay-display {
+  --title-color: #1f2937;
+  --title-font-size: 24px;
+}
+
+/* Title styling - override everything */
+.text-overlay-display h1,
+.text-overlay-display h2,
+.text-overlay-display h3,
+.text-overlay-display h4,
+.text-overlay-display h5,
+.text-overlay-display h6 {
+  color: var(--title-color) !important;
+  font-size: var(--title-font-size) !important;
+  margin: 0.5em 0 !important;
+  font-weight: bold !important;
+  font-family: inherit !important;
+}
+
+

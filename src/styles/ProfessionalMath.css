@@ -1,0 +1,439 @@
+/**
+ * Professional Math Styling
+ * KaTeX ve MathML'ye uygun CSS
+ */
+
+/* ==================== GENERAL MATH STYLES ==================== */
+
+.professional-math-renderer {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.8;
+  display: inline-block;
+  position: relative;
+}
+
+.professional-math-renderer:hover {
+  background-color: rgba(59, 130, 246, 0.05) !important;
+  border-radius: 4px;
+}
+
+/* ==================== KATEX RENDERING ==================== */
+
+.professional-math-renderer .katex {
+  font-size: inherit;
+}
+
+.professional-math-renderer .katex-display {
+  margin: 0.5em 0;
+  display: block;
+  text-align: center;
+}
+
+.professional-math-renderer .katex-mathml {
+  display: none;
+}
+
+/* KaTeX mtext (metin) */
+.professional-math-renderer .mtext {
+  font-family: inherit !important;
+  font-style: normal !important;
+}
+
+/* ==================== MATHML STYLES ==================== */
+
+.professional-math-renderer math {
+  font-family: "STIX Two Math", "Times New Roman", serif;
+  font-size: 1em;
+  display: inline;
+}
+
+.professional-math-renderer math[display="block"] {
+  display: block;
+  text-align: center;
+  margin: 1em 0;
+}
+
+/* MathML öğeleri */
+.professional-math-renderer mi,
+.professional-math-renderer mn,
+.professional-math-renderer mo {
+  font-style: italic;
+  letter-spacing: 0.05em;
+}
+
+.professional-math-renderer mo {
+  font-style: normal;
+  margin: 0 0.2em;
+}
+
+.professional-math-renderer mn {
+  font-style: normal;
+  font-weight: 500;
+}
+
+.professional-math-renderer mi {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.professional-math-renderer mtext {
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+/* MathML kesir */
+.professional-math-renderer mfrac {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.professional-math-renderer mfrac > * {
+  display: block;
+  text-align: center;
+}
+
+.professional-math-renderer mfrac > :first-child {
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.2em;
+}
+
+.professional-math-renderer mfrac > :last-child {
+  padding-top: 0.2em;
+}
+
+/* MathML üs/alt indeks */
+.professional-math-renderer msup,
+.professional-math-renderer msub,
+.professional-math-renderer msubsup {
+  display: inline;
+}
+
+.professional-math-renderer msup > :nth-child(2),
+.professional-math-renderer msub > :nth-child(2),
+.professional-math-renderer msubsup > :nth-child(2),
+.professional-math-renderer msubsup > :nth-child(3) {
+  font-size: 0.7em;
+  vertical-align: middle;
+}
+
+.professional-math-renderer msup > :nth-child(2) {
+  vertical-align: super;
+}
+
+.professional-math-renderer msub > :nth-child(2) {
+  vertical-align: sub;
+}
+
+/* MathML kök */
+.professional-math-renderer msqrt,
+.professional-math-renderer mroot {
+  display: inline-block;
+  position: relative;
+  vertical-align: middle;
+  border-top: 1px solid currentColor;
+  padding: 0.1em 0.2em;
+  margin: 0.1em 0;
+}
+
+.professional-math-renderer msqrt::before,
+.professional-math-renderer mroot::before {
+  content: "√";
+  position: absolute;
+  left: -0.15em;
+  top: -0.15em;
+  font-size: 1.2em;
+}
+
+/* MathML operatörler */
+.professional-math-renderer mover,
+.professional-math-renderer munder,
+.professional-math-renderer munderover {
+  display: inline-block;
+  position: relative;
+}
+
+/* MathML tablo */
+.professional-math-renderer mtable {
+  display: inline-table;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.professional-math-renderer mtr {
+  display: table-row;
+}
+
+.professional-math-renderer mtd {
+  display: table-cell;
+  padding: 0.3em 0.5em;
+  text-align: center;
+  border: 1px solid #ccc;
+}
+
+.professional-math-renderer mth {
+  display: table-cell;
+  padding: 0.3em 0.5em;
+  text-align: center;
+  border: 1px solid #ccc;
+  font-weight: bold;
+  background-color: #f3f4f6;
+}
+
+/* ==================== CHARACTER EDITOR ==================== */
+
+.character-math-editor {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.character-math-editor input,
+.character-math-editor textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.2s ease;
+}
+
+.character-math-editor input:focus,
+.character-math-editor textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #fff;
+}
+
+.character-math-editor label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.character-math-editor-fraction,
+.character-math-editor-power,
+.character-math-editor-subscript,
+.character-math-editor-root {
+  display: grid;
+  gap: 12px;
+}
+
+/* ==================== MATH ERROR ==================== */
+
+.math-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  padding: 6px 8px;
+  background-color: #fee2e2;
+  border-left: 3px solid #dc2626;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* ==================== INLINE MATH ==================== */
+
+.math-inline {
+  display: inline;
+  vertical-align: middle;
+  padding: 0 2px;
+}
+
+/* ==================== DISPLAY MATH ==================== */
+
+.math-display {
+  display: block;
+  margin: 1em 0;
+  padding: 12px;
+  background-color: #f9fafb;
+  border-left: 3px solid #3b82f6;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* ==================== EQUATION MARKER ==================== */
+
+.equation-code {
+  background-color: #e8eef7;
+  color: #1e40af;
+  padding: 2px 6px;
+  border-left: 3px solid #3b82f6;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+    "Courier New", monospace;
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+  border-radius: 2px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.equation-code:hover {
+  background-color: #dfe8f1;
+}
+
+.equation-code:focus-within {
+  background-color: #c7d5e8;
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* ==================== TIPTAP EDITOR MATH ==================== */
+
+.tiptap-editor-content math {
+  display: inline;
+  margin: 0 2px;
+  font-size: inherit;
+}
+
+.tiptap-editor-content .equation-code {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tiptap-editor-content .equation-code:hover {
+  background-color: #dfe8f1;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* ==================== FORMULA BUILDER STYLES ==================== */
+
+.formula-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 20px;
+}
+
+.formula-btn:hover {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.formula-btn:active {
+  transform: scale(0.95);
+}
+
+.formula-btn small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+  .professional-math-renderer {
+    font-size: 0.95em;
+  }
+
+  .character-math-editor {
+    padding: 8px;
+  }
+
+  .formula-btn {
+    padding: 10px 6px;
+    font-size: 18px;
+  }
+
+  .formula-btn small {
+    font-size: 10px;
+  }
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+  .professional-math-renderer {
+    break-inside: avoid;
+  }
+
+  .math-display {
+    page-break-inside: avoid;
+  }
+
+  .character-math-editor {
+    display: none;
+  }
+
+  .equation-code {
+    background-color: transparent;
+    border-left: none;
+    padding: 0;
+  }
+}
+
+/* ==================== ACCESSIBILITY ==================== */
+
+.professional-math-renderer:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.professional-math-renderer[aria-label] {
+  cursor: help;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ==================== ANIMATION ==================== */
+
+@keyframes mathPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.math-loading {
+  animation: mathPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mathFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.math-fade-in {
+  animation: mathFadeIn 0.3s ease-in-out;
+}

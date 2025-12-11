@@ -17,6 +17,8 @@ export default function PageCanvas({
   inlineEditingId,
   setInlineEditingId,
   onEditorCreate,
+  onOpenEquationEditor,
+  onOpenMathSymbolPanel,
 }) {
   const canvasRef = useRef(null);
   const pageContainerRef = useRef(null);
@@ -382,6 +384,8 @@ export default function PageCanvas({
               onPositionChange={(id, partial) => {
                 onOverlayChange?.(id, partial);
               }}
+              onOpenEquationEditor={onOpenEquationEditor}
+              onOpenMathSymbolPanel={onOpenMathSymbolPanel}
               showGrid={showGrid}
               gridSize={gridSize}
               guides={guides}

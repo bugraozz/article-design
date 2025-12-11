@@ -1,5 +1,5 @@
 // src/overlays/TiptapEditor.jsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 
 import StarterKit from "@tiptap/starter-kit";
@@ -13,8 +13,11 @@ import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
+import { MathInline, MathBlock } from "../extensions/MathExtension";
 
-export default function TiptapEditor({ initialContent, onChange, onEditorReady }) {
+export default function TiptapEditor({ initialContent, onChange, onEditorReady, onOpenEquationEditor, onOpenMathSymbolPanel }) {
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -37,6 +40,8 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady }
           class: "tiptap-table-cell",
         },
       }),
+      MathInline,
+      MathBlock,
     ],
     content: initialContent || "<p></p>",
     onUpdate({ editor }) {
@@ -60,12 +65,32 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady }
     }
   }, [editor, initialContent]);
 
+  // Sağ tık menüsünü kapat
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0 });
+    if (contextMenu.visible) {
+      document.addEventListener('click', closeMenu);
+      return () => document.removeEventListener('click', closeMenu);
+    }
+  }, [contextMenu.visible]);
+
+  // Sağ tık handler
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
   if (!editor) return null;
 
   return (
     <div
       className="w-full h-full bg-white rounded-lg border-2 border-gray-300 shadow-md overflow-hidden flex flex-col"
       onClick={(e) => e.stopPropagation()}
+      onContextMenu={handleContextMenu}
     >
       {/* Modern Toolbar - İki Satır */}
       <div className="bg-linear-to-r from-gray-50 to-gray-100 border-b border-gray-300 p-4 space-y-3">
@@ -336,6 +361,75 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady }
         style={{ outline: "none" }}
         onClick={(e) => e.stopPropagation()}
       />
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            zIndex: 10000,
+            background: 'white',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            padding: '4px',
+            minWidth: '180px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              setContextMenu({ visible: false, x: 0, y: 0 });
+              onOpenEquationEditor?.();
+            }}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: '4px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+          >
+            <span>∑</span>
+            <span>Denklem Ekle</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              setContextMenu({ visible: false, x: 0, y: 0 });
+              onOpenMathSymbolPanel?.();
+            }}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: '4px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#f3f4f6'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+          >
+            <span>π</span>
+            <span>Sembol Ekle</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

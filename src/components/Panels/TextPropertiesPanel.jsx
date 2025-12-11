@@ -23,12 +23,13 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import FontSize from "../../extensions/FontSize";
 import InlineColor from "../../extensions/InlineColor";
-import { Underline as UnderlineExt } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
 
 export default function TextPropertiesPanel({
   overlayId,
   overlayHtml,
+  titleFontSize,
+  titleColor,
   onChange,
   onClose,
   onApplyColor,
@@ -48,7 +49,6 @@ export default function TextPropertiesPanel({
         Highlight.configure({ multicolor: true }),
         FontSize,
         InlineColor,
-        UnderlineExt,
         TextStyle,
         Table.configure({
           resizable: true,
@@ -190,7 +190,19 @@ export default function TextPropertiesPanel({
             </button>
 
             <button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              onClick={() => {
+                editor.chain().focus().toggleHeading({ level: 2 }).run();
+                // onChange çağırarak TextOverlay'i güncelle
+                setTimeout(() => {
+                  onChange(editor.getHTML());
+                  
+                  const editorElement = document.querySelector('[contenteditable="true"]');
+                  if (editorElement && editorElement.parentElement) {
+                    editorElement.parentElement.style.setProperty("--title-color", titleColor || "#1f2937");
+                    editorElement.parentElement.style.setProperty("--title-font-size", titleFontSize ? `${titleFontSize}px` : "24px");
+                  }
+                }, 10);
+              }}
               className={`p-2 rounded border transition ${
                 editor.isActive("heading", { level: 2 })
                   ? "bg-blue-100 border-blue-400"

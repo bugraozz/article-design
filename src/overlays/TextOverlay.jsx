@@ -12,6 +12,8 @@ import FontSize from "../extensions/FontSize";
 import InlineColor from "../extensions/InlineColor";
 import { Underline as UnderlineExt } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
+import { processMathInHTML } from "../utils/mathRenderer";
+import { MathInline, MathBlock } from "../extensions/MathExtension";
 
 export default function TextOverlay({
   id,
@@ -35,6 +37,8 @@ export default function TextOverlay({
   onInlineChange,
   onEditorCreate,
   onPositionChange,
+  onOpenEquationEditor,
+  onOpenMathSymbolPanel,
   showGrid = false,
   gridSize = 20,
   guides = [],
@@ -78,6 +82,8 @@ export default function TextOverlay({
             class: "tiptap-table-cell",
           },
         }),
+        MathInline,
+        MathBlock,
       ],
       content: html,
       onUpdate: ({ editor }) => {
@@ -346,14 +352,23 @@ export default function TextOverlay({
                   boxSizing: "border-box",
                 }}
                 onContextMenu={(e) => {
-                  // Tablo içinde sağ-tık ise context menu göster
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  // Tablo içinde sağ-tık ise tablo context menu göster
                   if (editor.isActive("table")) {
-                    e.preventDefault();
-                    e.stopPropagation();
                     setTableContextMenu({
                       visible: true,
                       x: e.clientX,
                       y: e.clientY,
+                    });
+                  } else {
+                    // Normal sağ tık - genel context menu
+                    setTableContextMenu({
+                      visible: true,
+                      x: e.clientX,
+                      y: e.clientY,
+                      isGeneralMenu: true,
                     });
                   }
                 }}
@@ -393,7 +408,7 @@ export default function TextOverlay({
             e.stopPropagation();
             onRightClick?.({ x: e.clientX, y: e.clientY });
           }}
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: processMathInHTML(html) }}
         />
       )}
 
@@ -411,8 +426,8 @@ export default function TextOverlay({
         </>
       )}
 
-      {/* TABLE CONTEXT MENU */}
-      {tableContextMenu.visible && editor?.isActive("table") && (
+      {/* CONTEXT MENU - Tablo veya Genel */}
+      {tableContextMenu.visible && (
         <div
           className="fixed bg-white border border-gray-300 rounded-lg shadow-xl z-50 py-1 min-w-max"
           style={{
@@ -422,92 +437,119 @@ export default function TextOverlay({
           onClick={(e) => e.stopPropagation()}
           onMouseLeave={() => setTableContextMenu({ ...tableContextMenu, visible: false })}
         >
-          {/* Add Row */}
-          <button
-            onClick={() => {
-              editor.chain().focus().addRowAfter().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm font-medium text-gray-700 border-b border-gray-100"
-          >
-            ➕ Satır Ekle
-          </button>
+        {tableContextMenu.isGeneralMenu ? (
+          // GENEL MENU - Denklem/Sembol
+          <>
+            <button
+              onClick={() => {
+                onOpenEquationEditor?.();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-purple-50 text-sm font-medium text-gray-700 border-b border-gray-100"
+            >
+              <span className="mr-2">∑</span>Denklem Ekle
+            </button>
+            <button
+              onClick={() => {
+                onOpenMathSymbolPanel?.();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-indigo-50 text-sm font-medium text-gray-700"
+            >
+              <span className="mr-2">π</span>Sembol Ekle
+            </button>
+          </>
+        ) : (
+          // TABLO MENU
+          <>
+            {/* Add Row */}
+            <button
+              onClick={() => {
+                editor.chain().focus().addRowAfter().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm font-medium text-gray-700 border-b border-gray-100"
+            >
+              ➕ Satır Ekle
+            </button>
 
-          {/* Add Column */}
-          <button
-            onClick={() => {
-              editor.chain().focus().addColumnAfter().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm font-medium text-gray-700 border-b border-gray-100"
-          >
-            ➕ Sütun Ekle
-          </button>
+            {/* Add Column */}
+            <button
+              onClick={() => {
+                editor.chain().focus().addColumnAfter().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-blue-50 text-sm font-medium text-gray-700 border-b border-gray-100"
+            >
+              ➕ Sütun Ekle
+            </button>
 
-          {/* Delete Row */}
-          <button
-            onClick={() => {
-              editor.chain().focus().deleteRow().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-600 border-b border-gray-100"
-          >
-            ➖ Satır Sil
-          </button>
+            {/* Delete Row */}
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteRow().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-600 border-b border-gray-100"
+            >
+              ➖ Satır Sil
+            </button>
 
-          {/* Delete Column */}
-          <button
-            onClick={() => {
-              editor.chain().focus().deleteColumn().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-600 border-b border-gray-100"
-          >
-            ➖ Sütun Sil
-          </button>
+            {/* Delete Column */}
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteColumn().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-600 border-b border-gray-100"
+            >
+              ➖ Sütun Sil
+            </button>
 
-          {/* Merge Cells */}
-          <button
-            onClick={() => {
-              editor.chain().focus().mergeCells().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            disabled={!editor.can().mergeCells()}
-            className={`block w-full text-left px-4 py-2 text-sm font-medium border-b border-gray-100 ${
-              editor.can().mergeCells()
-                ? "hover:bg-green-50 text-green-600"
-                : "text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            🔗 Birleştir
-          </button>
+            {/* Merge Cells */}
+            <button
+              onClick={() => {
+                editor.chain().focus().mergeCells().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              disabled={!editor.can().mergeCells()}
+              className={`block w-full text-left px-4 py-2 text-sm font-medium border-b border-gray-100 ${
+                editor.can().mergeCells()
+                  ? "hover:bg-green-50 text-green-600"
+                  : "text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              🔗 Birleştir
+            </button>
 
-          {/* Split Cell */}
-          <button
-            onClick={() => {
-              editor.chain().focus().splitCell().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            disabled={!editor.can().splitCell()}
-            className={`block w-full text-left px-4 py-2 text-sm font-medium border-b border-gray-100 ${
-              editor.can().splitCell()
-                ? "hover:bg-green-50 text-green-600"
-                : "text-gray-400 cursor-not-allowed"
-            }`}
-          >
-            ✂️ Böl
-          </button>
+            {/* Split Cell */}
+            <button
+              onClick={() => {
+                editor.chain().focus().splitCell().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              disabled={!editor.can().splitCell()}
+              className={`block w-full text-left px-4 py-2 text-sm font-medium border-b border-gray-100 ${
+                editor.can().splitCell()
+                  ? "hover:bg-green-50 text-green-600"
+                  : "text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              ✂️ Böl
+            </button>
 
-          {/* Delete Table */}
-          <button
-            onClick={() => {
-              editor.chain().focus().deleteTable().run();
-              setTableContextMenu({ ...tableContextMenu, visible: false });
-            }}
-            className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-700"
-          >
-            🗑️ Tabloyu Sil
-          </button>
+            {/* Delete Table */}
+            <button
+              onClick={() => {
+                editor.chain().focus().deleteTable().run();
+                setTableContextMenu({ ...tableContextMenu, visible: false });
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-red-50 text-sm font-medium text-red-700"
+            >
+              🗑️ Tabloyu Sil
+            </button>
+          </>
+        )}
         </div>
       )}
     </div>

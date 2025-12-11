@@ -3,6 +3,7 @@ import { useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useEditor } from "@tiptap/react";
+import katex from "katex";
 
 import MainToolbar from "../components/Toolbar/MainToolbar";
 import PagesPanel from "../components/Editor/PagesPanel";
@@ -10,6 +11,9 @@ import PageCanvas from "../components/Editor/PageCanvas";
 import TextPropertiesPanel from "../components/Panels/TextPropertiesPanel";
 import TablePropertiesPanel from "../components/Panels/TablePropertiesPanel";
 import ArticleSettingsPanel from "../components/Panels/ArticleSettingsPanel";
+import EquationEditorModal from "../components/Modals/EquationEditorModal";
+import MathSymbolPanel from "../components/Panels/MathSymbolPanel";
+import EquationTemplatesPanel from "../components/Panels/EquationTemplatesPanel";
 import { defaultCoverPage, defaultArticleSettings } from "../types/article";
 
 export default function EditorPage() {
@@ -27,6 +31,11 @@ export default function EditorPage() {
 
   // Editor instance (tablo/metin özellikleri için)
   const [currentEditor, setCurrentEditor] = useState(null);
+
+  // Matematik panelleri ve modal state'leri
+  const [showEquationEditor, setShowEquationEditor] = useState(false);
+  const [showMathSymbolPanel, setShowMathSymbolPanel] = useState(false);
+  const [showEquationTemplatesPanel, setShowEquationTemplatesPanel] = useState(false);
 
   // ===== KLİPBOARD (Stili/Biçimi Kopyala) =====
   const [clipboard, setClipboard] = useState({
@@ -241,6 +250,142 @@ export default function EditorPage() {
     setActivePageId((prev) => prev + 1);
     setActiveOverlay(null);
     setInlineEditingId(null);
+  };
+
+  // ---------------------------
+  //  MATEMATİK FONKSİYONLARI
+  // ---------------------------
+  
+  // Denklem editörünü aç
+  const handleOpenEquationEditor = () => {
+    setShowEquationEditor(true);
+  };
+
+  // Denklem ekle
+  const handleInsertEquation = (latex, mode) => {
+    // KaTeX ile render et
+    let katexHTML = '';
+    try {
+      katexHTML = katex.renderToString(latex, {
+        throwOnError: false,
+        displayMode: mode === "block",
+        output: 'html',
+        trust: true,
+        strict: false,
+      });
+    } catch (error) {
+      console.error('KaTeX render error:', error);
+      katexHTML = mode === "inline" ? `$${latex}$` : `$$${latex}$$`;
+    }
+
+    const equationHTML = mode === "inline" 
+      ? `<span class="math-inline katex-rendered" data-latex="${latex}">${katexHTML}</span>`
+      : `<div class="math-block katex-rendered" data-latex="${latex}">${katexHTML}</div>`;
+
+    // Sadece aktif olarak düzenleme yapılıyorsa cursor pozisyonuna ekle
+    if (currentEditor && inlineEditingId) {
+      // Cursor pozisyonunu al ve oraya ekle
+      const { from } = currentEditor.state.selection;
+      currentEditor.chain().focus().insertContentAt(from, equationHTML).run();
+      setShowEquationEditor(false);
+    } 
+    else {
+      // Aktif editör yok - Yeni minimal text box oluştur
+      const activePage = pages.find((p) => p.id === activePageId);
+      if (!activePage) return;
+
+      const newOverlay = {
+        id: crypto.randomUUID(),
+        type: "text",
+        html: equationHTML,
+        x: 100,
+        y: 100,
+        width: 400,
+        height: 80,
+        fontSize: activePage.overlays[0]?.fontSize || articleSettings.bodyFontSize,
+        color: activePage.overlays[0]?.color || articleSettings.bodyColor,
+        lineHeight: activePage.overlays[0]?.lineHeight || articleSettings.bodyLineHeight,
+        textIndent: activePage.overlays[0]?.textIndent || articleSettings.paragraphIndent,
+        titleFontSize: activePage.overlays[0]?.titleFontSize || articleSettings.titleFontSize,
+        titleColor: activePage.overlays[0]?.titleColor || articleSettings.titleColor,
+      };
+
+      setPages((prev) =>
+        prev.map((page) =>
+          page.id === activePageId
+            ? { ...page, overlays: [...page.overlays, newOverlay] }
+            : page
+        )
+      );
+
+      setActiveOverlay(newOverlay.id);
+      setShowEquationEditor(false);
+    }
+  };
+
+  // Sembol panelini aç
+  const handleOpenMathSymbolPanel = () => {
+    setShowMathSymbolPanel(true);
+  };
+
+  // Sembol ekle
+  const handleInsertSymbol = (latex) => {
+    // KaTeX ile render et
+    let katexHTML = '';
+    try {
+      katexHTML = katex.renderToString(latex, {
+        throwOnError: false,
+        displayMode: false,
+        output: 'html',
+        trust: true,
+        strict: false,
+      });
+    } catch (error) {
+      console.error('KaTeX render error:', error);
+      katexHTML = `$${latex}$`;
+    }
+
+    const symbolHTML = `<span class="math-inline katex-rendered" data-latex="${latex}">${katexHTML}</span>`;
+
+    // Sadece aktif olarak düzenleme yapılıyorsa cursor pozisyonuna ekle
+    if (currentEditor && inlineEditingId) {
+      // Cursor pozisyonunu al ve oraya ekle
+      const { from } = currentEditor.state.selection;
+      currentEditor.chain().focus().insertContentAt(from, symbolHTML).run();
+      setShowMathSymbolPanel(false);
+    } 
+    else {
+      // Aktif editör yok - Yeni minimal text box oluştur
+      const activePage = pages.find((p) => p.id === activePageId);
+      if (!activePage) return;
+
+      const newOverlay = {
+        id: crypto.randomUUID(),
+        type: "text",
+        html: symbolHTML,
+        x: 100,
+        y: 100,
+        width: 300,
+        height: 60,
+        fontSize: activePage.overlays[0]?.fontSize || articleSettings.bodyFontSize,
+        color: activePage.overlays[0]?.color || articleSettings.bodyColor,
+        lineHeight: activePage.overlays[0]?.lineHeight || articleSettings.bodyLineHeight,
+        textIndent: activePage.overlays[0]?.textIndent || articleSettings.paragraphIndent,
+        titleFontSize: activePage.overlays[0]?.titleFontSize || articleSettings.titleFontSize,
+        titleColor: activePage.overlays[0]?.titleColor || articleSettings.titleColor,
+      };
+
+      setPages((prev) =>
+        prev.map((page) =>
+          page.id === activePageId
+            ? { ...page, overlays: [...page.overlays, newOverlay] }
+            : page
+        )
+      );
+
+      setActiveOverlay(newOverlay.id);
+      setShowMathSymbolPanel(false);
+    }
   };
 
   // ---------------------------
@@ -591,6 +736,8 @@ export default function EditorPage() {
         onExport={exportPNG}
         onExportPDF={exportPDF}
         onAddPage={addPage}
+        onOpenEquationEditor={handleOpenEquationEditor}
+        onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
       />
 
       <div className="flex flex-row grow">
@@ -620,6 +767,9 @@ export default function EditorPage() {
             onRightClick={handleRightClick}
             inlineEditingId={inlineEditingId}
             setInlineEditingId={setInlineEditingId}
+            onEditorCreate={setCurrentEditor}
+            onOpenEquationEditor={handleOpenEquationEditor}
+            onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
           />
         )}
 
@@ -752,6 +902,30 @@ export default function EditorPage() {
         settings={articleSettings}
         onSettingsChange={handleArticleSettingsChange}
       />
+
+      {/* MATEMATİK EDITÖR MODALİ */}
+      {showEquationEditor && (
+        <EquationEditorModal
+          onClose={() => setShowEquationEditor(false)}
+          onInsert={handleInsertEquation}
+        />
+      )}
+
+      {/* MATEMATİK SEMBOL PANELİ */}
+      {showMathSymbolPanel && (
+        <MathSymbolPanel
+          onInsert={handleInsertSymbol}
+          onClose={() => setShowMathSymbolPanel(false)}
+        />
+      )}
+
+      {/* DENKLEM ŞABLONLARI PANELİ */}
+      {showEquationTemplatesPanel && (
+        <EquationTemplatesPanel
+          onInsert={(latex) => handleInsertEquation(latex, "block")}
+          onClose={() => setShowEquationTemplatesPanel(false)}
+        />
+      )}
     </div>
   );
 }
