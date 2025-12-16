@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -13,6 +13,8 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 
 export default function SimpleTiptapEditor({ initialContent, onChange, onEditorReady }) {
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+  
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -26,9 +28,12 @@ export default function SimpleTiptapEditor({ initialContent, onChange, onEditorR
       TextAlign.configure({ types: ["paragraph", "heading"] }),
       Table.configure({
         resizable: true,
-        handleWidth: 4,
+        handleWidth: 5,
         cellMinWidth: 50,
         lastColumnResizable: true,
+        HTMLAttributes: {
+          class: "tiptap-table",
+        },
       }),
       TableRow,
       TableHeader,
@@ -59,6 +64,26 @@ export default function SimpleTiptapEditor({ initialContent, onChange, onEditorR
       editor.commands.setContent(initialContent, false);
     }
   }, [editor, initialContent]);
+
+  // Sağ tık menüsünü kapat
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0 });
+    if (contextMenu.visible) {
+      document.addEventListener('click', closeMenu);
+      return () => document.removeEventListener('click', closeMenu);
+    }
+  }, [contextMenu.visible]);
+
+  // Sağ tık handler
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      visible: true,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
 
   if (!editor) return null;
 
@@ -358,7 +383,273 @@ export default function SimpleTiptapEditor({ initialContent, onChange, onEditorR
         editor={editor}
         className="flex-1 overflow-y-auto p-4 tiptap-editor-content"
         onClick={(e) => e.stopPropagation()}
+        onContextMenu={handleContextMenu}
       />
+
+      {/* Professional Context Menu */}
+      {contextMenu.visible && editor && (
+        <div
+          style={{
+            position: 'fixed',
+            top: contextMenu.y,
+            left: contextMenu.x,
+            zIndex: 10000,
+            background: 'white',
+            border: '1px solid #d1d5db',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            padding: '4px',
+            minWidth: '200px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Tablo işlemleri - sadece tablo içindeyse göster */}
+          {editor.isActive("table") && (
+            <>
+              <button
+                onClick={() => {
+                  editor.chain().focus().addRowBefore().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬆️</span>
+                <span>Üste Satır Ekle</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  editor.chain().focus().addRowAfter().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬇️</span>
+                <span>Alta Satır Ekle</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteRow().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Satır Sil</span>
+              </button>
+
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().addColumnBefore().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬅️</span>
+                <span>Sola Sütun Ekle</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().addColumnAfter().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>➡️</span>
+                <span>Sağa Sütun Ekle</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteColumn().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Sütun Sil</span>
+              </button>
+
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().mergeCells().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                disabled={!editor.can().mergeCells()}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: editor.can().mergeCells() ? 'pointer' : 'not-allowed',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: editor.can().mergeCells() ? '#059669' : '#9ca3af',
+                }}
+                onMouseOver={(e) => {
+                  if (editor.can().mergeCells()) e.currentTarget.style.background = '#d1fae5';
+                }}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🔗</span>
+                <span>Hücreleri Birleştir</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().splitCell().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                disabled={!editor.can().splitCell()}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: editor.can().splitCell() ? 'pointer' : 'not-allowed',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: editor.can().splitCell() ? '#059669' : '#9ca3af',
+                }}
+                onMouseOver={(e) => {
+                  if (editor.can().splitCell()) e.currentTarget.style.background = '#d1fae5';
+                }}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>✂️</span>
+                <span>Hücreyi Böl</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteTable().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                  fontWeight: '600',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Tabloyu Sil</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

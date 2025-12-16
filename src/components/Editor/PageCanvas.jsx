@@ -2,39 +2,47 @@
 import { useEffect, useRef, useState } from "react";
 import TextOverlay from "../../overlays/TextOverlay";
 import ImageOverlay from "../../overlays/ImageOverlay";
+import TableOverlay from "../../overlays/TableOverlay";
 import RulerOverlay from "./RulerOverlay";
 
 export default function PageCanvas({
   overlays = [],
   images = [],
+  tables = [],
   pageSettings = {},
   activeOverlay,
   setActiveOverlay,
   activePageId,
   onOverlayChange,
   onImageChange,
+  onTableChange,
   onRightClick,
+  onCellEdit, // Yeni callback
   inlineEditingId,
   setInlineEditingId,
   onEditorCreate,
   onOpenEquationEditor,
   onOpenMathSymbolPanel,
+  presentationMode = false,
+  showGrid = true,
+  showGuides = true,
+  gridSize = 10,
+  snapEnabled = true,
+  zoom = 100,
 }) {
   const canvasRef = useRef(null);
   const pageContainerRef = useRef(null);
-  const [showGrid, setShowGrid] = useState(true);
-  const [showGuides, setShowGuides] = useState(true);
-  const [gridSize, setGridSize] = useState(20);
   const [guides, setGuides] = useState([]);
   const [pageMargin, setPageMargin] = useState(40);
   const [activeImage, setActiveImage] = useState(null);
+  const [activeTable, setActiveTable] = useState(null);
 
   // ===========================
   //  SNAPPING LOGİK
   // ===========================
-  // Snapping logic
+  // Snapping logic - geliştirilmiş
   const snapToGrid = (value) => {
-    if (!showGrid) return value;
+    if (!snapEnabled || !showGrid) return value;
     return Math.round(value / gridSize) * gridSize;
   };
 
@@ -65,84 +73,33 @@ export default function PageCanvas({
   //  RENDER
   // ===========================
   return (
-    <div className="relative flex items-center justify-center w-full h-full bg-gray-200">
-      {/* Rulers */}
-      <RulerOverlay pageWidth={794} pageHeight={1123} />
-
-      {/* Kontrol Toolbar */}
-      <div className="absolute top-4 left-36 bg-white rounded-lg shadow-md p-3 space-y-2 z-40">
-        <div className="flex gap-2 items-center text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setShowGrid(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-gray-700">Grid</span>
-          </label>
-        </div>
-
-        <div className="flex gap-2 items-center text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={showGuides}
-              onChange={(e) => setShowGuides(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-gray-700">Rehberler</span>
-          </label>
-        </div>
-
-        <div className="flex gap-2 items-center text-sm">
-          <label className="text-gray-600">Grid:</label>
-          <select
-            value={gridSize}
-            onChange={(e) => setGridSize(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1"
-          >
-            <option value={10}>10px</option>
-            <option value={20}>20px</option>
-            <option value={30}>30px</option>
-            <option value={50}>50px</option>
-          </select>
-        </div>
-
-        <div className="flex gap-2 items-center text-sm">
-          <label className="text-gray-600">Margin:</label>
-          <input
-            type="number"
-            value={pageMargin}
-            onChange={(e) => setPageMargin(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1 w-16"
-            min="0"
-            max="100"
-          />
-        </div>
-      </div>
-
+    <div className="relative flex items-center justify-center w-full h-full">
       <div
-        id="a4-page"
-        ref={pageContainerRef}
-        className="shadow-lg relative bg-white rounded"
         style={{
-          width: 794,
-          height: 1123,
-          boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
-          marginTop: 30,
-          marginLeft: 30,
-          paddingTop: `${pageSettings?.marginTop || 40}px`,
-          paddingBottom: `${pageSettings?.marginBottom || 40}px`,
-          paddingLeft: `${pageSettings?.marginLeft || 50}px`,
-          paddingRight: `${pageSettings?.marginRight || 50}px`,
-          boxSizing: "border-box",
+          transform: `scale(${zoom / 100})`,
+          transformOrigin: "center center",
+          transition: "transform 0.2s ease",
         }}
       >
+        <div
+          ref={pageContainerRef}
+          className="shadow-2xl relative bg-white"
+          style={{
+            width: 794,
+            height: 1123,
+            boxShadow: "0 10px 50px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.1)",
+            borderRadius: "2px",
+            paddingTop: `${pageSettings?.marginTop || 40}px`,
+            paddingBottom: `${pageSettings?.marginBottom || 40}px`,
+            paddingLeft: `${pageSettings?.marginLeft || 50}px`,
+            paddingRight: `${pageSettings?.marginRight || 50}px`,
+            boxSizing: "border-box",
+          }}
+        >
         <canvas ref={canvasRef} style={{ position: "relative", zIndex: 1, display: "none" }} />
 
-        {/* Grid Overlay */}
-        {showGrid && (
+        {/* Grid Overlay - Profesyonel (sadece edit modda) */}
+        {!presentationMode && showGrid && (
           <svg
             className="absolute top-0 left-0 pointer-events-none"
             style={{ zIndex: 2, width: 794, height: 1123 }}
@@ -157,17 +114,34 @@ export default function PageCanvas({
                 <path
                   d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
                   fill="none"
-                  stroke="#e5e7eb"
+                  stroke="#e0e7ff"
+                  strokeWidth="0.3"
+                  opacity="0.6"
+                />
+              </pattern>
+              {/* Her 5. grid çizgisi daha kalın */}
+              <pattern
+                id="grid-major"
+                width={gridSize * 5}
+                height={gridSize * 5}
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d={`M ${gridSize * 5} 0 L 0 0 0 ${gridSize * 5}`}
+                  fill="none"
+                  stroke="#c7d2fe"
                   strokeWidth="0.5"
+                  opacity="0.8"
                 />
               </pattern>
             </defs>
             <rect width={794} height={1123} fill="url(#grid)" />
+            <rect width={794} height={1123} fill="url(#grid-major)" />
           </svg>
         )}
 
-        {/* Margin Rehberleri */}
-        {showGuides && (
+        {/* Margin Rehberleri (sadece edit modda) */}
+        {!presentationMode && showGuides && (
           <svg
             className="absolute top-0 left-0 pointer-events-none"
             style={{ zIndex: 3, width: 794, height: 1123 }}
@@ -219,8 +193,8 @@ export default function PageCanvas({
           </svg>
         )}
 
-        {/* Draggable Rehberler */}
-        {showGuides && (
+        {/* Draggable Rehberler (sadece edit modda) */}
+        {!presentationMode && showGuides && (
           <svg
             className="absolute top-0 left-0"
             style={{
@@ -313,36 +287,6 @@ export default function PageCanvas({
           </svg>
         )}
 
-        {/* Rehber Ekleme Düğmeleri */}
-        <div className="absolute bottom-4 left-4 flex gap-2 z-40">
-          <button
-            onClick={() =>
-              setGuides([...guides, { type: "h", position: 300 }])
-            }
-            className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-          >
-            + H Rehber
-          </button>
-          <button
-            onClick={() =>
-              setGuides([...guides, { type: "v", position: 300 }])
-            }
-            className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
-          >
-            + V Rehber
-          </button>
-          {guides.length > 0 && (
-            <button
-              onClick={() =>
-                setGuides(guides.slice(0, -1))
-              }
-              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-            >
-              Kaldır
-            </button>
-          )}
-        </div>
-
         {/* HTML Overlay (canvas'ın üstünde) */}
         <div
           className="absolute top-0 left-0 w-full h-full"
@@ -369,12 +313,13 @@ export default function PageCanvas({
               isEditing={item.id === inlineEditingId}
               onClick={() => {
                 setActiveOverlay(item.id);
+                setInlineEditingId(item.id); // Seçildiğinde düzenleme moduna da geç
                 setActiveImage(null);
+                setActiveTable(null);
               }}
               onDoubleClick={() => {
                 setActiveOverlay(item.id);
                 setInlineEditingId(item.id);
-                onEditorCreate?.(null); // Editor reset
               }}
               onRightClick={onRightClick}
               onInlineChange={(newHtml) =>
@@ -407,6 +352,7 @@ export default function PageCanvas({
               onClick={() => {
                 setActiveImage(img.id);
                 setActiveOverlay(null);
+                setActiveTable(null);
                 setInlineEditingId(null);
               }}
               onRightClick={onRightClick}
@@ -418,7 +364,50 @@ export default function PageCanvas({
               guides={guides}
             />
           ))}
+
+          {/* Tablolar */}
+          {tables.map((table) => (
+            <TableOverlay
+              key={table.id}
+              id={table.id}
+              x={table.x}
+              y={table.y}
+              width={table.width}
+              height={table.height}
+              rows={table.rows}
+              cols={table.cols}
+              data={table.data}
+              mergedCells={table.mergedCells || {}}
+              cellStyles={table.cellStyles || {}}
+              headerRow={table.headerRow}
+              isActive={table.id === activeTable}
+              onClick={() => {
+                setActiveTable(table.id);
+                setActiveOverlay(null);
+                setActiveImage(null);
+                setInlineEditingId(null);
+              }}
+              onRightClick={onRightClick}
+              onPositionChange={(id, partial) => {
+                onTableChange?.(id, partial);
+              }}
+              onDataChange={(id, newData) => {
+                onTableChange?.(id, { data: newData });
+              }}
+              onMergedCellsChange={(id, mergedCells) => {
+                onTableChange?.(id, { mergedCells });
+              }}
+              onCellEdit={(tableId, row, col) => {
+                // Parent'a hücre düzenleme bilgisini gönder
+                onCellEdit?.(tableId, row, col);
+              }}
+              showGrid={showGrid}
+              gridSize={gridSize}
+              guides={guides}
+            />
+          ))}
         </div>
+      </div>
       </div>
     </div>
   );

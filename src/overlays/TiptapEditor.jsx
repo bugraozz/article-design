@@ -20,18 +20,34 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
   
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+        strike: false,
+      }),
       Underline,
-      Highlight,
+      Highlight.configure({
+        multicolor: true,
+        HTMLAttributes: {
+          class: 'tiptap-highlight',
+        },
+      }),
       TextStyle,
       Color,
       FontSize,
-      TextAlign.configure({ types: ["paragraph", "heading"] }),
+      TextAlign.configure({ 
+        types: ["paragraph", "heading"],
+        alignments: ["left", "center", "right", "justify"],
+      }),
       Table.configure({
         resizable: true,
-        handleWidth: 4,
+        handleWidth: 5,
         cellMinWidth: 50,
         lastColumnResizable: true,
+        HTMLAttributes: {
+          class: "tiptap-table",
+        },
       }),
       TableRow,
       TableHeader,
@@ -44,6 +60,11 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
       MathBlock,
     ],
     content: initialContent || "<p></p>",
+    editorProps: {
+      attributes: {
+        style: 'outline: none;',
+      },
+    },
     onUpdate({ editor }) {
       onChange?.(editor.getHTML());
     },
@@ -74,9 +95,10 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
     }
   }, [contextMenu.visible]);
 
-  // Sağ tık handler
+  // Sağ tık handler - imlecin olduğu yerde aç
   const handleContextMenu = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenu({
       visible: true,
       x: e.clientX,
@@ -98,6 +120,40 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
         <div className="flex flex-wrap gap-2 items-center pb-2 border-b border-gray-200">
           {/* Stil Butonları */}
           <div className="flex gap-1 items-center">
+            {/* Başlık Seçenekleri */}
+            <select
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "p") {
+                  editor.chain().focus().setParagraph().run();
+                } else if (value === "h1") {
+                  editor.chain().focus().toggleHeading({ level: 1 }).run();
+                } else if (value === "h2") {
+                  editor.chain().focus().toggleHeading({ level: 2 }).run();
+                } else if (value === "h3") {
+                  editor.chain().focus().toggleHeading({ level: 3 }).run();
+                }
+              }}
+              value={
+                editor.isActive("heading", { level: 1 })
+                  ? "h1"
+                  : editor.isActive("heading", { level: 2 })
+                  ? "h2"
+                  : editor.isActive("heading", { level: 3 })
+                  ? "h3"
+                  : "p"
+              }
+              className="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 cursor-pointer font-medium"
+              title="Metin Stili"
+            >
+              <option value="p">Normal</option>
+              <option value="h1">Başlık 1</option>
+              <option value="h2">Başlık 2</option>
+              <option value="h3">Başlık 3</option>
+            </select>
+
+            <div className="w-px h-6 bg-gray-300"></div>
+
             <button
               type="button"
               onClick={() => editor.chain().focus().toggleBold().run()}
@@ -171,15 +227,25 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
 
             {/* Renk */}
             <div className="flex items-center gap-1">
+              <label className="text-xs text-gray-600 font-medium">Renk:</label>
               <input
                 type="color"
-                onInput={(e) =>
-                  editor.chain().focus().setColor(e.target.value).run()
-                }
-                defaultValue="#000000"
+                onChange={(e) => {
+                  const color = e.target.value;
+                  editor.chain().focus().setColor(color).run();
+                }}
+                value={editor.getAttributes('textStyle').color || '#000000'}
                 className="w-10 h-10 border-2 border-gray-300 rounded-md cursor-pointer hover:border-blue-400 transition"
                 title="Yazı Rengi"
               />
+              <button
+                type="button"
+                onClick={() => editor.chain().focus().unsetColor().run()}
+                className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition"
+                title="Rengi Sıfırla"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="w-px h-6 bg-gray-300"></div>
@@ -259,13 +325,10 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
           {/* Vurgu Rengi */}
           <input
             type="color"
-            onInput={(e) =>
-              editor
-                .chain()
-                .focus()
-                .toggleHighlight({ color: e.target.value })
-                .run()
-            }
+            onChange={(e) => {
+              const color = e.target.value;
+              editor.chain().focus().setHighlight({ color }).run();
+            }}
             defaultValue="#FFFF00"
             className="w-10 h-10 border-2 border-gray-300 rounded-md cursor-pointer hover:border-blue-400 transition"
             title="Vurgu Rengi"
@@ -274,14 +337,14 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHighlight().run()}
-            className={`p-2 rounded-md transition ${
+            className={`px-3 py-2 rounded-md transition text-sm ${
               editor.isActive("highlight")
-                ? "bg-blue-500 text-white shadow-sm"
+                ? "bg-yellow-400 text-gray-900 shadow-sm"
                 : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
             }`}
-            title="Vurguyu Kapat"
+            title="Vurgula / Vurguyu Kaldır"
           >
-            ✕ Vurgu
+            {editor.isActive("highlight") ? "✓ Vurgu" : "🖍 Vurgu"}
           </button>
 
           <div className="w-px h-6 bg-gray-300"></div>
@@ -290,7 +353,7 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
           <button
             type="button"
             onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-            className="p-2 rounded-md bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 transition font-medium"
+            className="p-2 rounded-md bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 transition font-medium text-xs"
             title="Tablo Ekle (3x3)"
           >
             📊 Tablo
@@ -298,58 +361,132 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
 
           <button
             type="button"
-            onClick={() => editor.chain().focus().addRowAfter().run()}
+            onClick={() => editor.chain().focus().addRowBefore().run()}
             disabled={!editor.isActive("table")}
-            className={`p-2 rounded-md transition ${
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
               editor.isActive("table")
-                ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                ? "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                 : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
             }`}
-            title="Satır Ekle"
+            title="Üste Satır Ekle"
           >
-            ➕ Satır
+            ⬆️ Satır
           </button>
 
           <button
             type="button"
-            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            onClick={() => editor.chain().focus().addRowAfter().run()}
             disabled={!editor.isActive("table")}
-            className={`p-2 rounded-md transition ${
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
               editor.isActive("table")
-                ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                ? "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
                 : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
             }`}
-            title="Sütun Ekle"
+            title="Alta Satır Ekle"
           >
-            ➕ Sütun
+            ⬇️ Satır
           </button>
 
           <button
             type="button"
             onClick={() => editor.chain().focus().deleteRow().run()}
             disabled={!editor.isActive("table")}
-            className={`p-2 rounded-md transition ${
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
               editor.isActive("table")
-                ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                ? "bg-red-50 text-red-600 border border-red-300 hover:bg-red-100"
                 : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
             }`}
             title="Satır Sil"
           >
-            ➖ Satır
+            🗑️ Satır
+          </button>
+
+          <div className="w-px h-6 bg-gray-300"></div>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().addColumnBefore().run()}
+            disabled={!editor.isActive("table")}
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
+              editor.isActive("table")
+                ? "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+            }`}
+            title="Sola Sütun Ekle"
+          >
+            ⬅️ Sütun
+          </button>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            disabled={!editor.isActive("table")}
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
+              editor.isActive("table")
+                ? "bg-white text-gray-700 border border-gray-300 hover:bg-blue-50"
+                : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+            }`}
+            title="Sağa Sütun Ekle"
+          >
+            ➡️ Sütun
           </button>
 
           <button
             type="button"
             onClick={() => editor.chain().focus().deleteColumn().run()}
             disabled={!editor.isActive("table")}
-            className={`p-2 rounded-md transition ${
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
               editor.isActive("table")
-                ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100"
+                ? "bg-red-50 text-red-600 border border-red-300 hover:bg-red-100"
                 : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
             }`}
             title="Sütun Sil"
           >
-            ➖ Sütun
+            🗑️ Sütun
+          </button>
+
+          <div className="w-px h-6 bg-gray-300"></div>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().mergeCells().run()}
+            disabled={!editor.can().mergeCells()}
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
+              editor.can().mergeCells()
+                ? "bg-green-50 text-green-600 border border-green-300 hover:bg-green-100"
+                : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+            }`}
+            title="Hücreleri Birleştir"
+          >
+            🔗 Birleştir
+          </button>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().splitCell().run()}
+            disabled={!editor.can().splitCell()}
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
+              editor.can().splitCell()
+                ? "bg-green-50 text-green-600 border border-green-300 hover:bg-green-100"
+                : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+            }`}
+            title="Hücreyi Böl"
+          >
+            ✂️ Böl
+          </button>
+
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            disabled={!editor.isActive("table")}
+            className={`px-2 py-1.5 rounded-md transition text-xs ${
+              editor.isActive("table")
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed"
+            }`}
+            title="Tabloyu Sil"
+          >
+            🗑️ Tablo
           </button>
         </div>
       </div>
@@ -362,7 +499,7 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
         onClick={(e) => e.stopPropagation()}
       />
 
-      {/* Context Menu */}
+      {/* Professional Context Menu */}
       {contextMenu.visible && (
         <div
           style={{
@@ -375,10 +512,259 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             padding: '4px',
-            minWidth: '180px',
+            minWidth: '200px',
           }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Tablo işlemleri - sadece tablo içindeyse göster */}
+          {editor.isActive("table") && (
+            <>
+              <button
+                onClick={() => {
+                  editor.chain().focus().addRowBefore().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬆️</span>
+                <span>Üste Satır Ekle</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  editor.chain().focus().addRowAfter().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬇️</span>
+                <span>Alta Satır Ekle</span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteRow().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Satır Sil</span>
+              </button>
+
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().addColumnBefore().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>⬅️</span>
+                <span>Sola Sütun Ekle</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().addColumnAfter().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>➡️</span>
+                <span>Sağa Sütun Ekle</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteColumn().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Sütun Sil</span>
+              </button>
+
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().mergeCells().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                disabled={!editor.can().mergeCells()}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: editor.can().mergeCells() ? 'pointer' : 'not-allowed',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: editor.can().mergeCells() ? '#059669' : '#9ca3af',
+                }}
+                onMouseOver={(e) => {
+                  if (editor.can().mergeCells()) e.currentTarget.style.background = '#d1fae5';
+                }}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🔗</span>
+                <span>Hücreleri Birleştir</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().splitCell().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                disabled={!editor.can().splitCell()}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: editor.can().splitCell() ? 'pointer' : 'not-allowed',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: editor.can().splitCell() ? '#059669' : '#9ca3af',
+                }}
+                onMouseOver={(e) => {
+                  if (editor.can().splitCell()) e.currentTarget.style.background = '#d1fae5';
+                }}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>✂️</span>
+                <span>Hücreyi Böl</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().deleteTable().run();
+                  setContextMenu({ visible: false, x: 0, y: 0 });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#dc2626',
+                  fontWeight: '600',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <span>🗑️</span>
+                <span>Tabloyu Sil</span>
+              </button>
+
+              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+            </>
+          )}
+
+          {/* Matematik işlemleri */}
           <button
             onClick={() => {
               setContextMenu({ visible: false, x: 0, y: 0 });

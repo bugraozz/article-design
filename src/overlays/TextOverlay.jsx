@@ -12,6 +12,7 @@ import FontSize from "../extensions/FontSize";
 import InlineColor from "../extensions/InlineColor";
 import { Underline as UnderlineExt } from "@tiptap/extension-underline";
 import { TextStyle } from "@tiptap/extension-text-style";
+import Color from "@tiptap/extension-color";
 import { processMathInHTML } from "../utils/mathRenderer";
 import { MathInline, MathBlock } from "../extensions/MathExtension";
 
@@ -62,13 +63,28 @@ export default function TextOverlay({
   const editor = useEditor(
     {
       extensions: [
-        StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-        TextAlign.configure({ types: ["heading", "paragraph"], alignments: ["left", "center", "right"] }),
-        Highlight.configure({ multicolor: true }),
+        StarterKit.configure({ 
+          heading: { 
+            levels: [1, 2, 3] 
+          },
+          strike: false,
+          underline: false, // StarterKit'te underline varsa disable et
+        }),
+        UnderlineExt, // Önce UnderlineExt'i ekle
+        TextAlign.configure({ 
+          types: ["heading", "paragraph"], 
+          alignments: ["left", "center", "right", "justify"] 
+        }),
+        Highlight.configure({ 
+          multicolor: true,
+          HTMLAttributes: {
+            class: 'tiptap-highlight',
+          },
+        }),
         FontSize,
         InlineColor,
-        UnderlineExt,
-        TextStyle,
+        TextStyle, // TextStyle'ı Color'dan önce
+        Color, // Color'u en sona
         Table.configure({
           resizable: true,
           handleWidth: 4,
@@ -86,8 +102,15 @@ export default function TextOverlay({
         MathBlock,
       ],
       content: html,
+      editorProps: {
+        attributes: {
+          style: 'outline: none; padding: 4px;',
+        },
+      },
       onUpdate: ({ editor }) => {
-        onInlineChange?.(editor.getHTML());
+        const newHtml = editor.getHTML();
+        console.log('📝 TextOverlay onUpdate:', newHtml);
+        onInlineChange?.(newHtml);
         // İçerik güncellenince container height'ını ölç
         if (isEditing && editorContainerRef.current) {
           setTimeout(() => {
@@ -103,21 +126,56 @@ export default function TextOverlay({
         }
       },
     },
-    [id, isEditing]
+    [id] // isEditing'i kaldır - editor bir kere oluşturulsun
   );
 
+  // HTML dışarıdan değiştiğinde içeriği güncelle (sadece ilk mount'ta)
+  const isInitialMount = useRef(true);
   useEffect(() => {
-    if (editor && isEditing && html && editor.getHTML() !== html) {
-      editor.commands.setContent(html);
+    if (editor && html) {
+      const currentHtml = editor.getHTML();
+      // İlk mount veya dışarıdan gelen HTML editörden farklıysa güncelle
+      if (isInitialMount.current || (currentHtml !== html && !isEditing)) {
+        console.log('🔄 TextOverlay: Dışarıdan HTML güncellendi, editöre yükleniyor');
+        editor.commands.setContent(html);
+        isInitialMount.current = false;
+      }
     }
-  }, [id, isEditing, editor]);
+  }, [html, editor]);
 
-  // Editor seçilince parent'a geç - isEditing fark etmez
+  // Editor seçilince parent'a geç - DocumentEditor gibi
   useEffect(() => {
     if (editor) {
+      console.log(`✅ TextOverlay ${id}: Editor oluşturuldu, parent'a gönderiliyor`);
+      console.log(`✅ TextOverlay ${id}: onEditorCreate fonksiyonu:`, typeof onEditorCreate);
       onEditorCreate?.(editor);
     }
   }, [editor, onEditorCreate]);
+  
+  // isEditing DEĞİL, isActive değiştiğinde editor'ü parent'a geç
+  // Böylece overlay seçildiğinde bile toolbar çalışır
+  useEffect(() => {
+    console.log(`🔍 TextOverlay ${id}: isActive değişti:`, isActive, 'editor:', !!editor);
+    if (editor && isActive) {
+      console.log(`✅ TextOverlay ${id}: Aktif hale geldi, editor parent'a gönderiliyor`);
+      console.log(`✅ TextOverlay ${id}: onEditorCreate çağrılıyor:`, typeof onEditorCreate);
+      onEditorCreate?.(editor);
+    }
+  }, [isActive, editor, onEditorCreate]);
+
+  // Editing moduna geçtiğinde focus ver
+  useEffect(() => {
+    if (editor && isEditing) {
+      // Focus'u editöre ver
+      setTimeout(() => {
+        try {
+          editor.commands.focus();
+        } catch (e) {
+          // Ignore focus errors
+        }
+      }, 100);
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     setCurrentSize({ width, height });
@@ -306,7 +364,7 @@ export default function TextOverlay({
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onRightClick?.(id, { x: e.clientX, y: e.clientY });
+        onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'text');
       }}
     >
       {isEditing ? (
@@ -343,7 +401,7 @@ export default function TextOverlay({
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}
-              className="tiptap-editor-content"
+              className="tiptap-editor-content text-overlay-tiptap"
             >
               <EditorContent 
                 editor={editor}
@@ -373,6 +431,7 @@ export default function TextOverlay({
                   }
                 }}
                 onClick={(e) => {
+                  e.stopPropagation();
                   // Context menu açıksa kapat
                   if (tableContextMenu.visible) {
                     setTableContextMenu({ ...tableContextMenu, visible: false });
@@ -396,7 +455,7 @@ export default function TextOverlay({
             height: "100%",
             overflow: "hidden",
             boxShadow: isActive ? "0 0 0 2px rgba(59, 130, 246, 0.2)" : "none",
-            fontSize: fontSize ? `${fontSize}px` : "14px",
+            "--paragraph-font-size": fontSize ? `${fontSize}px` : "14px",
             "--default-text-color": color || "#000000",
             lineHeight: lineHeight || 1.4,
             textIndent: `${Math.max(0, textIndent || 0)}px`,

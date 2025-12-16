@@ -121,10 +121,27 @@
   color: #1d4ed8;
 }
 
-.tiptap-content-editor mark {
+.tiptap-content-editor mark,
+.tiptap-highlight {
   background-color: #fef08a;
   padding: 0.1em 0.2em;
   border-radius: 2px;
+  color: inherit;
+}
+
+/* Farklı vurgu renkleri için destek */
+.tiptap-content-editor mark[data-color],
+.tiptap-highlight[data-color] {
+  background-color: var(--highlight-color, #fef08a);
+}
+
+/* Inline renk desteği */
+.inline-color {
+  color: inherit;
+}
+
+span[data-color] {
+  color: var(--text-color);
 }
 
 /* Matematik Sembolleri Desteği */
@@ -427,5 +444,235 @@ mjx-mo[stretchy="true"] {
   mjx-mn {
     color: #e4e4e7;
   }
+}
+
+/* ==========================================
+   PowerPoint-Style Table Styling
+   ========================================== */
+
+.tiptap-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tiptap-table-cell {
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  position: relative;
+  vertical-align: top;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+.tiptap-table-cell:hover {
+  background-color: #f9fafb;
+}
+
+.tiptap-table-cell > * {
+  margin: 0;
+}
+
+.tiptap-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  text-align: left;
+  border: 1px solid #d1d5db;
+  padding: 10px 12px;
+  color: #374151;
+}
+
+.tiptap-table td {
+  min-height: 1em;
+}
+
+/* PowerPoint-style column resize handles */
+.tiptap-table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  cursor: col-resize;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s, width 0.1s;
+}
+
+.tiptap-table:hover .column-resize-handle {
+  opacity: 0.4;
+}
+
+.tiptap-table .column-resize-handle:hover {
+  opacity: 1 !important;
+  width: 6px;
+  background-color: #2563eb;
+}
+
+.tiptap-table .column-resize-handle.active {
+  opacity: 1;
+  width: 6px;
+  background-color: #1d4ed8;
+}
+
+/* Selected cells */
+.tiptap-table .selectedCell {
+  background-color: #dbeafe !important;
+  outline: 2px solid #3b82f6;
+  outline-offset: -1px;
+}
+
+.tiptap-table .selectedCell:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(59, 130, 246, 0.1);
+  pointer-events: none;
+}
+
+/* Grip handle for table (like PowerPoint) */
+.tableWrapper {
+  position: relative;
+  margin: 1em 0;
+}
+
+.tableWrapper:hover::before {
+  content: '⣿';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  font-size: 14px;
+  color: #3b82f6;
+  cursor: move;
+  background: white;
+  padding: 2px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+
+/* Empty cells indicator */
+.tiptap-table-cell:empty::before {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+}
+
+/* Responsive table wrapper */
+.tiptap-content-editor .tableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Print styles */
+@media print {
+  .tiptap-table {
+    box-shadow: none;
+  }
+  
+  .column-resize-handle {
+    display: none !important;
+  }
+  
+  .tableWrapper:hover::before {
+    display: none !important;
+  }
+}
+
+/* ==========================================
+   TEXT OVERLAY TIPTAP STYLES
+   ========================================== */
+
+/* TextOverlay için özel TipTap stilleri - EDIT MODE */
+.text-overlay-tiptap .ProseMirror {
+  outline: none;
+  min-height: 20px;
+  padding: 4px;
+}
+
+/* Başlık stilleri - TextOverlay içinde (EDIT MODE + DISPLAY MODE) */
+.text-overlay-tiptap h1,
+.text-overlay-tiptap h2,
+.text-overlay-tiptap h3,
+.text-overlay-display h1,
+.text-overlay-display h2,
+.text-overlay-display h3 {
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+  color: var(--heading-color, #1f2937);
+}
+
+.text-overlay-tiptap h1,
+.text-overlay-display h1 {
+  font-size: 2em;
+}
+
+.text-overlay-tiptap h2,
+.text-overlay-display h2 {
+  font-size: 1.6em;
+}
+
+.text-overlay-tiptap h3,
+.text-overlay-display h3 {
+  font-size: 1.4em;
+}
+
+/* Vurgulama (Highlight) stilleri - HER İKİ MODDA */
+.text-overlay-tiptap mark,
+.text-overlay-tiptap .tiptap-highlight,
+.text-overlay-display mark,
+.text-overlay-display .tiptap-highlight {
+  background-color: #fef08a !important;
+  padding: 0.1em 0.2em;
+  border-radius: 2px;
+  color: inherit;
+}
+
+/* Kalın metin - HER İKİ MODDA */
+.text-overlay-tiptap strong,
+.text-overlay-display strong {
+  font-weight: 700;
+  color: inherit;
+}
+
+/* İtalik metin - HER İKİ MODDA */
+.text-overlay-tiptap em,
+.text-overlay-display em {
+  font-style: italic;
+}
+
+/* Altı çizili metin - HER İKİ MODDA */
+.text-overlay-tiptap u,
+.text-overlay-display u {
+  text-decoration: underline;
+}
+
+/* Normal paragraf - HER İKİ MODDA */
+.text-overlay-tiptap p,
+.text-overlay-display p {
+  margin: 0.5em 0;
+  line-height: inherit;
+  color: var(--default-text-color, #000000);
+  font-size: var(--paragraph-font-size, 14px); /* CSS variable'dan al */
+}
+
+/* Display modunda h1/h2/h3 font-size'ları güçlendir */
+.text-overlay-display h1 {
+  font-size: 2em !important;
+}
+
+.text-overlay-display h2 {
+  font-size: 1.6em !important;
+}
+
+.text-overlay-display h3 {
+  font-size: 1.4em !important;
 }
 

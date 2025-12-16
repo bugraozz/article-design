@@ -1,0 +1,249 @@
+/* src/styles/DocumentEditor.css */
+
+.document-editor-wrapper {
+  width: 794px;
+  height: 1123px;
+  overflow: hidden;
+  background: white;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.document-pages {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.document-page {
+  width: 794px;
+  height: 1123px;
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.document-page-content {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.document-editor-content {
+  outline: none;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.document-editor-content p {
+  margin: 0;
+  padding: 0;
+}
+
+.document-editor-content h1,
+.document-editor-content h2,
+.document-editor-content h3,
+.document-editor-content h4 {
+  margin: 0.8em 0 0.4em 0;
+  text-indent: 0;
+}
+
+.document-editor-content img.document-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+  border-radius: 4px;
+}
+
+.document-editor-content .tiptap-table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: auto;
+  table-layout: fixed;
+  position: relative;
+}
+
+/* Tablo Genişlik Sınıfları */
+.document-editor-content .tiptap-table.table-width-25 {
+  width: 25% !important;
+}
+
+.document-editor-content .tiptap-table.table-width-50 {
+  width: 50% !important;
+}
+
+.document-editor-content .tiptap-table.table-width-75 {
+  width: 75% !important;
+}
+
+.document-editor-content .tiptap-table.table-width-100 {
+  width: 100% !important;
+}
+
+.document-editor-content .tiptap-table.table-width-auto {
+  width: auto !important;
+}
+
+.document-editor-content .tiptap-table td,
+.document-editor-content .tiptap-table th {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: left;
+  min-width: 50px;
+  position: relative;
+  vertical-align: top;
+}
+
+.document-editor-content .tiptap-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+/* TipTap Table Resize Handles */
+.document-editor-content .tableWrapper {
+  position: relative;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.document-editor-content .resize-cursor {
+  cursor: col-resize;
+}
+
+/* Column resize handle */
+.document-editor-content .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  opacity: 0;
+  cursor: col-resize;
+  z-index: 20;
+  transition: opacity 0.2s;
+}
+
+.document-editor-content td:hover .column-resize-handle,
+.document-editor-content th:hover .column-resize-handle {
+  opacity: 0.6;
+}
+
+.document-editor-content .column-resize-handle:hover {
+  opacity: 1 !important;
+}
+
+/* Table selection */
+.document-editor-content .selectedCell {
+  background-color: #dbeafe !important;
+  border: 2px solid #3b82f6;
+}
+
+/* Draggable & Resizable Table Wrapper */
+.document-editor-content .draggable-table-wrapper {
+  user-select: none;
+  max-width: 100%;
+}
+
+.document-editor-content .draggable-table-wrapper:hover {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.document-editor-content .draggable-table-wrapper .resize-handle {
+  pointer-events: all;
+}
+
+.document-editor-content .draggable-table-wrapper .resize-handle:hover {
+  background: #2563eb !important;
+  opacity: 1 !important;
+}
+
+/* Tablo padding için container */
+.document-editor-content .draggable-table-wrapper .table-content {
+  display: inline-block;
+  min-width: 200px;
+}
+
+/* Math rendering */
+.document-editor-content .math-inline,
+.document-editor-content .math-block {
+  display: inline-block;
+  margin: 0 2px;
+}
+
+.document-editor-content .math-block {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+
+/* Selected cell highlight */
+.document-editor-content .selectedCell {
+  background-color: #e3f2fd;
+}
+
+/* Placeholder */
+.document-editor-content p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Two Columns Layout */
+.document-editor-content p.two-columns,
+.document-editor-content div.two-columns {
+  column-count: 2;
+  column-gap: 30px;
+  column-rule: 1px solid #e5e7eb;
+  text-align: justify;
+}
+
+/* Lists */
+.document-editor-content ul,
+.document-editor-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.document-editor-content li {
+  margin: 0.25em 0;
+}
+
+/* Bold, Italic, Underline */
+.document-editor-content strong {
+  font-weight: 600;
+}
+
+.document-editor-content em {
+  font-style: italic;
+}
+
+.document-editor-content u {
+  text-decoration: underline;
+}
+
+/* Highlight */
+.document-editor-content mark {
+  background-color: #fef08a;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* Image captions */
+.document-editor-content figure {
+  margin: 1.5em 0;
+  text-align: center;
+}
+
+.document-editor-content figcaption {
+  margin-top: 0.5em;
+  font-size: 0.9em;
+  color: #6b7280;
+  font-style: italic;
+}

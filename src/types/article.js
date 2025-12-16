@@ -29,12 +29,15 @@ export const defaultArticleSettings = {
   coverPageLogoHeight: 100,
 };
 
-export const defaultPage = (id) => ({
+export const defaultPage = (id, mode = "free") => ({
   id,
   title: `Sayfa ${id}`,
   type: id === 1 ? "cover" : "content", // 'cover' veya 'content'
+  mode: mode, // 'free' veya 'document'
   overlays: [],
   images: [],
+  tables: [],
+  documentContent: "", // Belge modu içeriği
   // Sayfa spesifik ayarlar
   pageSettings: {
     marginTop: 40,
@@ -44,10 +47,12 @@ export const defaultPage = (id) => ({
   },
 });
 
-export const defaultCoverPage = (id) => ({
+export const defaultCoverPage = (id, mode = "free") => ({
   id,
   title: `Sayfa ${id}`,
   type: "cover",
+  mode: mode, // 'free' veya 'document'
+  documentContent: "", // Belge modu içeriği
   overlays: [
     // Logo
     {
@@ -138,6 +143,7 @@ export const defaultCoverPage = (id) => ({
     },
   ],
   images: [],
+  tables: [],
   pageSettings: {
     marginTop: 40,
     marginBottom: 40,

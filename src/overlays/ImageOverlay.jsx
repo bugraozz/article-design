@@ -181,7 +181,7 @@ export default function ImageOverlay({
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onRightClick?.(id, { x: e.clientX, y: e.clientY });
+        onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'image');
       }}
     >
       <img

@@ -12,6 +12,8 @@ import {
   ListOrdered,
   Heading2,
   X,
+  Sigma,
+  PenTool,
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -24,6 +26,7 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import FontSize from "../../extensions/FontSize";
 import InlineColor from "../../extensions/InlineColor";
 import { TextStyle } from "@tiptap/extension-text-style";
+import { MathInline, MathBlock } from "../../extensions/MathExtension";
 
 export default function TextPropertiesPanel({
   overlayId,
@@ -33,6 +36,9 @@ export default function TextPropertiesPanel({
   onChange,
   onClose,
   onApplyColor,
+  onOpenEquationEditor,
+  onOpenMathSymbolPanel,
+  onEditorReady,
 }) {
   const editor = useEditor(
     {
@@ -63,14 +69,29 @@ export default function TextPropertiesPanel({
         TableRow,
         TableHeader,
         TableCell,
+        MathInline,
+        MathBlock,
       ],
       content: overlayHtml,
       onUpdate: ({ editor }) => {
         onChange(editor.getHTML());
       },
+      onSelectionUpdate: ({ editor }) => {
+        // Her cursor hareketi sonrası editörü parent'a bildir
+        if (onEditorReady) {
+          onEditorReady(editor);
+        }
+      },
     },
     [overlayId]
   );
+
+  // Editor hazır olduğunda parent'a bildir
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   // Content değişince editor'ü güncelle
   useEffect(() => {
@@ -382,6 +403,33 @@ export default function TextPropertiesPanel({
               Kapat
             </button>
           </div>
+        </div>
+
+        {/* Matematik */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Matematik
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onOpenEquationEditor}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 text-sm font-medium text-purple-700 transition"
+              title="Denklem Ekle"
+            >
+              <Sigma size={18} />
+              Denklem
+            </button>
+
+            <button
+              onClick={onOpenMathSymbolPanel}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-300 rounded hover:bg-indigo-100 text-sm font-medium text-indigo-700 transition"
+              title="Sembol Ekle"
+            >
+              <PenTool size={18} />
+              Sembol
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">💡 İmleci nereye koyduysan oraya ekler</p>
         </div>
       </div>
     </div>

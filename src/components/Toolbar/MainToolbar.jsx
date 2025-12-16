@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Type,
   Image,
@@ -7,6 +8,10 @@ import {
   Grid3x3,
   Sigma,
   PenTool,
+  Layout,
+  FileEdit,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 export default function MainToolbar({
@@ -18,7 +23,10 @@ export default function MainToolbar({
   onExportPDF,
   onOpenEquationEditor,
   onOpenMathSymbolPanel,
+  cleanView = false,
+  onToggleCleanView,
 }) {
+  const [showPageModeMenu, setShowPageModeMenu] = useState(false);
   return (
     <div className="w-full bg-white border-b border-gray-200 px-6 py-3 flex gap-4 items-center shadow-sm">
       {/* Sol Grup - İçerik Ekleme */}
@@ -49,16 +57,47 @@ export default function MainToolbar({
           Tablo
         </button>
 
-        <button
-          onClick={onAddPage}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
-        >
-          <FilePlus size={18} className="text-purple-500" />
-          Sayfa
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowPageModeMenu(!showPageModeMenu)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          >
+            <FilePlus size={18} className="text-purple-500" />
+            Sayfa
+          </button>
+          
+          {showPageModeMenu && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 min-w-[160px]">
+              <button
+                onClick={() => {
+                  onAddPage("document");
+                  setShowPageModeMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-blue-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
+              >
+                <FileEdit size={16} className="text-blue-500" />
+                <div>
+                  <div className="font-semibold">Belge Sayfası</div>
+                  <div className="text-xs text-gray-500">Word gibi editör</div>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  onAddPage("free");
+                  setShowPageModeMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 text-left text-sm font-medium text-gray-700"
+              >
+                <Layout size={16} className="text-purple-500" />
+                <div>
+                  <div className="font-semibold">Serbest Sayfa</div>
+                  <div className="text-xs text-gray-500">Drag & drop mod</div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className="flex-1 border-l border-gray-300"></div>
 
       {/* Matematik Grup - Denklem & Sembol */}
       <div className="flex gap-2 items-center">
@@ -82,6 +121,20 @@ export default function MainToolbar({
       </div>
 
       <div className="flex-1 border-l border-gray-300"></div>
+
+      {/* Görünüm Toggle */}
+      <button
+        onClick={onToggleCleanView}
+        className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-150 font-medium text-sm hover:shadow-md ${
+          cleanView
+            ? "bg-green-50 border-green-400 text-green-700 hover:bg-green-100"
+            : "bg-white border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+        }`}
+        title={cleanView ? "Düzenleme moduna geç" : "Temiz görünüm (grid/kontroller gizli)"}
+      >
+        {cleanView ? <EyeOff size={18} /> : <Eye size={18} />}
+        {cleanView ? "Düzenleme" : "Temiz Görünüm"}
+      </button>
 
       {/* Sağ Grup - Dışa Aktarma */}
       <div className="flex gap-2 items-center">
