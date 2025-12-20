@@ -475,6 +475,39 @@ math[display="block"] {
   margin: 10px 0;
 }
 
+/* FREE-MODE TABLO HÜCRELERİNDE KATEX DENKLEMLERİ */
+.free-mode-table td .katex,
+.free-mode-table th .katex,
+.free-mode-table td .math-inline,
+.free-mode-table th .math-inline,
+.free-mode-table td .math-block,
+.free-mode-table th .math-block {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+.free-mode-table td .math-block,
+.free-mode-table th .math-block {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
+}
+
+.free-mode-table td .katex-html,
+.free-mode-table th .katex-html {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Tablo hücreleri denklem içeriğini taşmamasını sağla */
+.free-mode-table td,
+.free-mode-table th {
+  overflow: visible !important;
+  word-wrap: break-word;
+}
+
 /* Çift tıklama ipucu */
 .math-inline.katex-rendered::after,
 .math-block.katex-rendered::after {

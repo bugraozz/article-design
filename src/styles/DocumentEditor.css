@@ -96,6 +96,27 @@
   min-width: 50px;
   position: relative;
   vertical-align: top;
+  /* KaTeX denklemleri için */
+  overflow: visible;
+}
+
+/* Tablo hücreleri içindeki KaTeX denklemer */
+.document-editor-content .tiptap-table td .katex,
+.document-editor-content .tiptap-table th .katex,
+.document-editor-content .tiptap-table td .math-inline,
+.document-editor-content .tiptap-table th .math-inline,
+.document-editor-content .tiptap-table td .math-block,
+.document-editor-content .tiptap-table th .math-block {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+}
+
+.document-editor-content .tiptap-table td .math-block,
+.document-editor-content .tiptap-table th .math-block {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
 }
 
 .document-editor-content .tiptap-table th {

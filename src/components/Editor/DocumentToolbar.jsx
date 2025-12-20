@@ -1,4 +1,5 @@
 // src/components/Editor/DocumentToolbar.jsx
+import { useEffect } from "react";
 import {
   Bold,
   Italic,
@@ -25,8 +26,38 @@ import {
   Split,
 } from "lucide-react";
 
-export default function DocumentToolbar({ editor, onOpenEquationEditor, onOpenMathSymbolPanel }) {
+export default function DocumentToolbar({ 
+  editor, 
+  onOpenEquationEditor, 
+  onOpenMathSymbolPanel,
+  // Serbest mod için grid kontrolleri
+  showGridControls = false,
+  showGrid,
+  setShowGrid,
+  snapEnabled,
+  setSnapEnabled,
+  gridSize,
+  setGridSize,
+  zoom,
+  setZoom,
+  showGuides,
+  setShowGuides,
+}) {
   if (!editor) return null;
+
+  // Debug grid props
+  useEffect(() => {
+    if (showGridControls) {
+      console.log('🎛️ DocumentToolbar Grid Props:', {
+        showGrid,
+        snapEnabled,
+        gridSize,
+        zoom,
+        showGuides,
+        setZoom: typeof setZoom,
+      });
+    }
+  }, [showGridControls, showGrid, snapEnabled, gridSize, zoom, showGuides, setZoom]);
 
   const toggleTwoColumns = () => {
     const currentClasses = editor.getAttributes('paragraph').class || '';
@@ -372,6 +403,87 @@ export default function DocumentToolbar({ editor, onOpenEquationEditor, onOpenMa
         </button>
       </div>
 
+      {/* Grid Kontrolleri - Sadece Serbest Mod */}
+      {showGridControls && (
+        <>
+          <div className="toolbar-separator"></div>
+          <div className="toolbar-group" style={{ gap: '6px' }}>
+            <button
+              onClick={() => setShowGrid?.(!showGrid)}
+              className={`toolbar-btn-extended ${showGrid ? 'active' : ''}`}
+              title="Grid göster/gizle"
+            >
+              ⌘ Grid
+            </button>
+            <button
+              onClick={() => setSnapEnabled?.(!snapEnabled)}
+              className={`toolbar-btn-extended ${snapEnabled ? 'active' : ''}`}
+              title="Grid'e yapışmayı aç/kapat"
+            >
+              🧲 Snap
+            </button>
+            <select
+              value={gridSize}
+              onChange={(e) => setGridSize?.(Number(e.target.value))}
+              className="toolbar-select"
+              title="Grid boyutu"
+            >
+              <option value={5}>5px</option>
+              <option value={10}>10px</option>
+              <option value={20}>20px</option>
+              <option value={25}>25px</option>
+              <option value={50}>50px</option>
+            </select>
+            <button
+              onClick={() => setShowGuides?.(!showGuides)}
+              className={`toolbar-btn-extended ${showGuides ? 'active' : ''}`}
+              title="Rehber çizgileri göster/gizle"
+            >
+              📐 Guide
+            </button>
+          </div>
+          <div className="toolbar-separator"></div>
+          <div className="toolbar-group" style={{ gap: '4px' }}>
+            <button
+              onClick={() => {
+                console.log('➖ Zoom out clicked, current zoom:', zoom);
+                if (setZoom) setZoom(Math.max(50, zoom - 10));
+              }}
+              className="toolbar-btn"
+              title="Zoom out"
+            >
+              −
+            </button>
+            <span style={{ fontSize: '11px', color: '#525252', minWidth: '40px', textAlign: 'center' }}>
+              {zoom}%
+            </span>
+            <button
+              onClick={() => {
+                console.log('➕ Zoom in clicked, current zoom:', zoom);
+                if (setZoom) setZoom(Math.min(200, zoom + 10));
+              }}
+              className="toolbar-btn"
+              title="Zoom in"
+            >
+              +
+            </button>
+            <button
+              onClick={() => {
+                console.log('🔄 Reset zoom clicked, current zoom:', zoom, 'setZoom:', typeof setZoom);
+                if (setZoom) {
+                  setZoom(100);
+                  console.log('✅ Zoom reset to 100');
+                }
+              }}
+              className="toolbar-btn-extended"
+              title="Reset zoom"
+            >
+              Reset
+            </button>
+          </div>
+        </>
+      )}
+
       <style jsx>{`
         .document-toolbar {
           display: flex;
@@ -428,6 +540,53 @@ export default function DocumentToolbar({ editor, onOpenEquationEditor, onOpenMa
         .toolbar-btn:disabled {
           opacity: 0.3;
           cursor: not-allowed;
+        }
+
+        .toolbar-btn-extended {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 8px;
+          height: 28px;
+          border: none;
+          background: #f5f5f5;
+          border-radius: 3px;
+          cursor: pointer;
+          color: #525252;
+          transition: all 0.1s;
+          font-size: 11px;
+          font-weight: 500;
+          white-space: nowrap;
+        }
+
+        .toolbar-btn-extended:hover {
+          background: #e5e5e5;
+          color: #262626;
+        }
+
+        .toolbar-btn-extended.active {
+          background: #3b82f6;
+          color: white;
+        }
+
+        .toolbar-select {
+          height: 28px;
+          border: 1px solid #d4d4d4;
+          border-radius: 3px;
+          padding: 0 6px;
+          font-size: 11px;
+          background: white;
+          color: #525252;
+          cursor: pointer;
+          outline: none;
+        }
+
+        .toolbar-select:hover {
+          border-color: #a3a3a3;
+        }
+
+        .toolbar-select:focus {
+          border-color: #3b82f6;
         }
       `}</style>
     </div>

@@ -1,5 +1,5 @@
 // src/overlays/TableOverlay.jsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 export default function TableOverlay({
   id,
@@ -22,6 +22,7 @@ export default function TableOverlay({
   showGrid = false,
   gridSize = 20,
   guides = [],
+  snapEnabled = true,
   headerRow = true,
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -63,12 +64,15 @@ export default function TableOverlay({
     setCurrentSize({ width, height });
   }, [width, height]);
 
-  const snapToGrid = (value) => {
-    if (!showGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  };
+  const snapToGrid = useCallback((value) => {
+    console.log('🎯 [TableOverlay] snapToGrid:', { value, snapEnabled, showGrid, gridSize });
+    if (!snapEnabled || !showGrid) return value;
+    const snapped = Math.round(value / gridSize) * gridSize;
+    console.log('🎯 [TableOverlay] snapToGrid result:', snapped);
+    return snapped;
+  }, [snapEnabled, showGrid, gridSize]);
 
-  const snapToGuides = (value, isVertical) => {
+  const snapToGuides = useCallback((value, isVertical) => {
     if (guides.length === 0) return value;
     const SNAP_DISTANCE = 10;
     const relevantGuides = guides.filter((g) =>
@@ -80,7 +84,7 @@ export default function TableOverlay({
       }
     }
     return value;
-  };
+  }, [guides]);
 
   const handleMouseDown = (e) => {
     // Eğer hücre düzenleniyorsa drag'i engelle
@@ -173,7 +177,7 @@ export default function TableOverlay({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange]);
+  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange, snapToGrid, snapToGuides]);
 
   const handleCellDoubleClick = (rowIdx, colIdx) => {
     setIsEditingCell({ row: rowIdx, col: colIdx });
@@ -353,7 +357,14 @@ export default function TableOverlay({
                         }}
                       />
                     ) : (
-                      cell
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: cell }} 
+                        style={{ 
+                          display: "inline-block",
+                          width: "100%",
+                          wordBreak: "break-word"
+                        }}
+                      />
                     )}
                   </th>
                 ) : (
@@ -395,7 +406,14 @@ export default function TableOverlay({
                         }}
                       />
                     ) : (
-                      cell
+                      <div 
+                        dangerouslySetInnerHTML={{ __html: cell }} 
+                        style={{ 
+                          display: "inline-block",
+                          width: "100%",
+                          wordBreak: "break-word"
+                        }}
+                      />
                     )}
                   </td>
                 );

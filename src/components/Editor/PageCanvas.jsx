@@ -334,6 +334,8 @@ export default function PageCanvas({
               showGrid={showGrid}
               gridSize={gridSize}
               guides={guides}
+              snapEnabled={snapEnabled}
+              presentationMode={presentationMode}
             />
           ))}
 
@@ -362,6 +364,7 @@ export default function PageCanvas({
               showGrid={showGrid}
               gridSize={gridSize}
               guides={guides}
+              snapEnabled={snapEnabled}
             />
           ))}
 
@@ -404,6 +407,7 @@ export default function PageCanvas({
               showGrid={showGrid}
               gridSize={gridSize}
               guides={guides}
+              snapEnabled={snapEnabled}
             />
           ))}
         </div>

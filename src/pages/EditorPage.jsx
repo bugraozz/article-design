@@ -321,8 +321,8 @@ export default function EditorPage() {
               html: "<p>İçerik burada başlayacak...</p>",
               x: articleSettings.pageMarginLeft,
               y: articleSettings.pageMarginTop,
-              width: 793.9 - (articleSettings.pageMarginLeft + articleSettings.pageMarginRight),
-              height: 200,
+              width: 400,
+              height: 80,
               fontSize: articleSettings.bodyFontSize,
               color: articleSettings.bodyColor,
               lineHeight: articleSettings.bodyLineHeight,
@@ -398,7 +398,9 @@ export default function EditorPage() {
       if (table) {
         const newData = [...(table.data || [])];
         const currentContent = newData[activeTableCell.row]?.[activeTableCell.col] || '';
-        newData[activeTableCell.row][activeTableCell.col] = currentContent + ' ' + equationHTML;
+        // İçerik boş değilse araya boşluk ekle, HTML ise wrap et
+        const separator = currentContent && !currentContent.trim().endsWith('>') ? ' ' : '';
+        newData[activeTableCell.row][activeTableCell.col] = currentContent + separator + equationHTML;
         handleTableChange(activeTableCell.tableId, { data: newData });
         setShowEquationEditor(false);
         return;
@@ -426,8 +428,8 @@ export default function EditorPage() {
       html: equationHTML,
       x: 100,
       y: 100,
-      width: mode === "block" ? 400 : 250,
-      height: mode === "block" ? 100 : 60,
+      width: mode === "block" ? 300 : 150,
+      height: mode === "block" ? 80 : 50,
       fontSize: activePage.overlays[0]?.fontSize || articleSettings.bodyFontSize,
       color: activePage.overlays[0]?.color || articleSettings.bodyColor,
       lineHeight: activePage.overlays[0]?.lineHeight || articleSettings.bodyLineHeight,
@@ -519,8 +521,8 @@ export default function EditorPage() {
       html: symbolHTML,
       x: 100,
       y: 100,
-      width: 200,
-      height: 50,
+      width: 120,
+      height: 40,
       fontSize: activePage.overlays[0]?.fontSize || articleSettings.bodyFontSize,
       color: activePage.overlays[0]?.color || articleSettings.bodyColor,
       lineHeight: activePage.overlays[0]?.lineHeight || articleSettings.bodyLineHeight,
@@ -746,9 +748,10 @@ export default function EditorPage() {
       const reader = new FileReader();
       reader.onload = function (f) {
         const data = f.target.result;
+        const activePage = pages.find((p) => p.id === activePageId);
 
         // Document mode - Editöre inline görsel ekle
-        if (editorMode === "document" && currentEditor) {
+        if (activePage?.mode === "document" && currentEditor) {
           currentEditor.chain().focus().setImage({ src: data }).run();
           return;
         }
@@ -1393,6 +1396,17 @@ export default function EditorPage() {
                 editor={currentEditor}
                 onOpenEquationEditor={handleOpenEquationEditor}
                 onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+                showGridControls={true}
+                showGrid={showGrid}
+                setShowGrid={setShowGrid}
+                snapEnabled={snapEnabled}
+                setSnapEnabled={setSnapEnabled}
+                gridSize={gridSize}
+                setGridSize={setGridSize}
+                zoom={zoom}
+                setZoom={setZoom}
+                showGuides={showGuides}
+                setShowGuides={setShowGuides}
               />
             </div>
           )}

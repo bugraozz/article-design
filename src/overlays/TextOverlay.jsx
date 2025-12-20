@@ -1,5 +1,5 @@
 // src/overlays/TextOverlay.jsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
@@ -43,6 +43,8 @@ export default function TextOverlay({
   showGrid = false,
   gridSize = 20,
   guides = [],
+  snapEnabled = true,
+  presentationMode = false,
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -111,26 +113,48 @@ export default function TextOverlay({
         const newHtml = editor.getHTML();
         console.log('📝 TextOverlay onUpdate:', newHtml);
         onInlineChange?.(newHtml);
-        // İçerik güncellenince container height'ını ölç
-        if (isEditing && editorContainerRef.current) {
-          setTimeout(() => {
-            if (editorContainerRef.current) {
-              const scrollHeight = editorContainerRef.current.scrollHeight;
-              if (scrollHeight !== currentSize.height) {
-                const newHeight = Math.max(30, scrollHeight);
-                setCurrentSize((prev) => ({ ...prev, height: newHeight }));
-                onPositionChange?.(id, { height: newHeight });
-              }
+        
+        // İçerik güncellenince container boyutunu otomatik ayarla
+        setTimeout(() => {
+          if (editorContainerRef.current) {
+            // Geçici div ile gerçek içerik boyutunu ölç
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.visibility = 'hidden';
+            tempDiv.style.width = `${currentSize.width - 16}px`; // padding çıkar
+            tempDiv.style.fontSize = fontSize ? `${fontSize}px` : '14px';
+            tempDiv.style.lineHeight = lineHeight || 1.4;
+            tempDiv.style.whiteSpace = 'pre-wrap';
+            tempDiv.style.wordWrap = 'break-word';
+            tempDiv.style.wordBreak = 'break-word';
+            tempDiv.innerHTML = newHtml;
+            document.body.appendChild(tempDiv);
+            
+            const neededHeight = tempDiv.scrollHeight + 16; // padding ekle
+            document.body.removeChild(tempDiv);
+            
+            const updates = {};
+            
+            // Yükseklik güncelle
+            if (neededHeight > currentSize.height) {
+              updates.height = Math.min(800, neededHeight);
             }
-          }, 10);
-        }
+            
+            if (Object.keys(updates).length > 0) {
+              setCurrentSize((prev) => ({ ...prev, ...updates }));
+              onPositionChange?.(id, updates);
+            }
+          }
+        }, 50);
       },
     },
     [id] // isEditing'i kaldır - editor bir kere oluşturulsun
   );
 
-  // HTML dışarıdan değiştiğinde içeriği güncelle (sadece ilk mount'ta)
+  // İlk mount kontrolü için ref
   const isInitialMount = useRef(true);
+
+  // Editor mounting ve content güncellemesi için effect
   useEffect(() => {
     if (editor && html) {
       const currentHtml = editor.getHTML();
@@ -139,9 +163,71 @@ export default function TextOverlay({
         console.log('🔄 TextOverlay: Dışarıdan HTML güncellendi, editöre yükleniyor');
         editor.commands.setContent(html);
         isInitialMount.current = false;
+        
+        // İçerik güncellenince boyutu hesapla
+        setTimeout(() => {
+          if (editorContainerRef.current) {
+            const container = editorContainerRef.current;
+            const contentHeight = container.scrollHeight;
+            const contentWidth = container.scrollWidth;
+            const currentHeight = container.clientHeight;
+            const currentWidth = container.clientWidth;
+            
+            const updates = {};
+            
+            // Yükseklik - sadece içerik taşıyorsa büyüt
+            if (contentHeight > currentHeight) {
+              updates.height = Math.min(800, currentSize.height + (contentHeight - currentHeight) + 10);
+            }
+            
+            // Genişlik - sadece içerik taşıyorsa büyüt
+            if (contentWidth > currentWidth) {
+              updates.width = Math.min(700, currentSize.width + (contentWidth - currentWidth) + 10);
+            }
+            
+            if (Object.keys(updates).length > 0) {
+              setCurrentSize((prev) => ({ ...prev, ...updates }));
+              onPositionChange?.(id, updates);
+            }
+          }
+        }, 100);
       }
     }
   }, [html, editor]);
+
+  // Font boyutu, lineHeight veya diğer stil değişikliklerinde boyutu ayarla
+  useEffect(() => {
+    if (editor && editorContainerRef.current) {
+      setTimeout(() => {
+        if (editorContainerRef.current) {
+          const currentHtml = editor.getHTML();
+          
+          // Geçici div ile gerçek içerik boyutunu ölç
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'absolute';
+          tempDiv.style.visibility = 'hidden';
+          tempDiv.style.width = `${currentSize.width - 16}px`; // padding çıkar
+          tempDiv.style.fontSize = fontSize ? `${fontSize}px` : '14px';
+          tempDiv.style.lineHeight = lineHeight || 1.4;
+          tempDiv.style.whiteSpace = 'pre-wrap';
+          tempDiv.style.wordWrap = 'break-word';
+          tempDiv.style.wordBreak = 'break-word';
+          tempDiv.innerHTML = currentHtml;
+          document.body.appendChild(tempDiv);
+          
+          const neededHeight = tempDiv.scrollHeight + 16; // padding ekle
+          document.body.removeChild(tempDiv);
+          
+          // Yükseklik güncelle
+          if (neededHeight > currentSize.height) {
+            const updates = { height: Math.min(800, neededHeight) };
+            setCurrentSize((prev) => ({ ...prev, ...updates }));
+            onPositionChange?.(id, updates);
+          }
+        }
+      }, 100);
+    }
+  }, [fontSize, lineHeight, color]);
 
   // Editor seçilince parent'a geç - DocumentEditor gibi
   useEffect(() => {
@@ -194,12 +280,15 @@ export default function TextOverlay({
   }, [tableContextMenu.visible]);
 
   // Snapping helper functions
-  const snapToGrid = (value) => {
-    if (!showGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  };
+  const snapToGrid = useCallback((value) => {
+    console.log('🎯 snapToGrid called:', { value, snapEnabled, showGrid, gridSize });
+    if (!snapEnabled || !showGrid) return value;
+    const snapped = Math.round(value / gridSize) * gridSize;
+    console.log('🎯 snapToGrid result:', snapped);
+    return snapped;
+  }, [snapEnabled, showGrid, gridSize]);
 
-  const snapToGuides = (value, isVertical) => {
+  const snapToGuides = useCallback((value, isVertical) => {
     if (guides.length === 0) return value;
     const SNAP_DISTANCE = 10;
     const relevantGuides = guides.filter((g) =>
@@ -211,7 +300,7 @@ export default function TextOverlay({
       }
     }
     return value;
-  };
+  }, [guides]);
 
   const handleMouseDown = (e) => {
     // Eğer resize handle üzerinde ise
@@ -309,7 +398,7 @@ export default function TextOverlay({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange, onInlineChange, html]);
+  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange, snapToGrid, snapToGuides]);
 
   const ResizeHandle = ({ direction }) => (
     <div
@@ -344,8 +433,7 @@ export default function TextOverlay({
         left: x,
         top: y,
         width: currentSize.width,
-        height: isEditing ? "auto" : currentSize.height,
-        minHeight: currentSize.height,
+        height: currentSize.height,
         transform: `rotate(${rotate || 0}deg)`,
         transformOrigin: "top left",
         pointerEvents: "auto",
@@ -372,21 +460,26 @@ export default function TextOverlay({
           ref={editorContainerRef}
           style={{
             outline: "none",
-            border: "2px solid #10b981",
+            border: presentationMode ? "none" : "1px solid #10b981",
             borderRadius: "4px",
             padding: "8px",
-            backgroundColor: "rgba(16, 185, 129, 0.05)",
-            height: "auto",
-            minHeight: "30px",
+            backgroundColor: presentationMode ? "transparent" : "rgba(16, 185, 129, 0.03)",
             width: "100%",
+            height: "100%",
             boxSizing: "border-box",
             overflow: "visible",
-            boxShadow: "0 0 0 2px rgba(16, 185, 129, 0.3)",
-            fontSize: "14px",
+            boxShadow: presentationMode ? "none" : "0 0 0 1px rgba(16, 185, 129, 0.2)",
+            fontSize: fontSize ? `${fontSize}px` : "14px",
+            color: color || "#000000",
+            lineHeight: lineHeight || 1.4,
             wordWrap: "break-word",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
             overflowWrap: "break-word",
+            '--paragraph-font-size': fontSize ? `${fontSize}px` : '14px',
+            '--default-text-color': color || '#000000',
+            '--heading-font-size': titleFontSize ? `${titleFontSize}px` : 'inherit',
+            '--heading-color': titleColor || color || '#000000',
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
@@ -443,36 +536,43 @@ export default function TextOverlay({
         </div>
       ) : (
         <div
+          ref={editorContainerRef}
           className="text-overlay-display"
           style={{
             outline: "none",
             whiteSpace: "pre-wrap",
-            border: isActive ? "2px solid #3b82f6" : "1px dashed rgba(59, 130, 246, 0.3)",
+            border: presentationMode ? "none" : "1px dashed rgba(59, 130, 246, 0.3)",
             borderRadius: "4px",
             padding: "8px",
-            backgroundColor: isActive ? "rgba(59, 130, 246, 0.02)" : "transparent",
+            backgroundColor: "transparent",
             transition: "all 0.2s ease",
             height: "100%",
-            overflow: "hidden",
-            boxShadow: isActive ? "0 0 0 2px rgba(59, 130, 246, 0.2)" : "none",
-            "--paragraph-font-size": fontSize ? `${fontSize}px` : "14px",
-            "--default-text-color": color || "#000000",
+            overflow: "visible",
+            boxShadow: "none",
+            fontSize: fontSize ? `${fontSize}px` : "14px",
+            color: color || "#000000",
             lineHeight: lineHeight || 1.4,
             textIndent: `${Math.max(0, textIndent || 0)}px`,
-            "--heading-font-size": titleFontSize ? `${titleFontSize}px` : "inherit",
-            "--heading-color": titleColor || color || "#000000",
+            boxSizing: "border-box",
+            wordWrap: "break-word",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            '--paragraph-font-size': fontSize ? `${fontSize}px` : '14px',
+            '--default-text-color': color || '#000000',
+            '--heading-font-size': titleFontSize ? `${titleFontSize}px` : 'inherit',
+            '--heading-color': titleColor || color || '#000000',
           }}
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onRightClick?.({ x: e.clientX, y: e.clientY });
+            onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'text');
           }}
           dangerouslySetInnerHTML={{ __html: processMathInHTML(html) }}
         />
       )}
 
-      {/* Resize Handles - Sadece aktif ve editing değilken göster */}
-      {isActive && !isEditing && (
+      {/* Resize Handles - Sadece aktif, editing değilken ve presentationMode false ise göster */}
+      {isActive && !isEditing && !presentationMode && (
         <>
           <ResizeHandle direction="nw" />
           <ResizeHandle direction="ne" />

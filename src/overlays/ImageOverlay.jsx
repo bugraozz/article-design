@@ -1,5 +1,5 @@
 // src/overlays/ImageOverlay.jsx
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 export default function ImageOverlay({
   id,
@@ -16,6 +16,7 @@ export default function ImageOverlay({
   showGrid = false,
   gridSize = 20,
   guides = [],
+  snapEnabled = true,
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
@@ -31,12 +32,15 @@ export default function ImageOverlay({
   }, [width, height]);
 
   // Snapping helper functions
-  const snapToGrid = (value) => {
-    if (!showGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  };
+  const snapToGrid = useCallback((value) => {
+    console.log('🎯 [ImageOverlay] snapToGrid:', { value, snapEnabled, showGrid, gridSize });
+    if (!snapEnabled || !showGrid) return value;
+    const snapped = Math.round(value / gridSize) * gridSize;
+    console.log('🎯 [ImageOverlay] snapToGrid result:', snapped);
+    return snapped;
+  }, [snapEnabled, showGrid, gridSize]);
 
-  const snapToGuides = (value, isVertical) => {
+  const snapToGuides = useCallback((value, isVertical) => {
     if (guides.length === 0) return value;
     const SNAP_DISTANCE = 10;
     const relevantGuides = guides.filter((g) =>
@@ -48,7 +52,7 @@ export default function ImageOverlay({
       }
     }
     return value;
-  };
+  }, [guides]);
 
   const handleMouseDown = (e) => {
     const target = e.target;
@@ -132,7 +136,7 @@ export default function ImageOverlay({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange]);
+  }, [isDragging, isResizing, dragOffset, x, y, currentSize, resizeDir, id, onPositionChange, snapToGrid, snapToGuides]);
 
   const ResizeHandle = ({ direction }) => (
     <div
