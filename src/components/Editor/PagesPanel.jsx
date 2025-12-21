@@ -25,7 +25,7 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
 
   return (
     <>
-      <div className="w-52 h-full bg-gray-50 border-r border-gray-200 flex flex-col"
+      <div className="w-52 bg-gray-50 border-r border-gray-200 flex flex-col sticky top-0 self-start" style={{ height: 'calc(100vh - 60px)' }}
         onClick={() => {
           setContextMenu({ visible: false, x: 0, y: 0, pageId: null });
           setShowAddMenu(false);

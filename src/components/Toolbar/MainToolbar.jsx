@@ -19,6 +19,7 @@ export default function MainToolbar({
   onAddImage,
   onAddTable,
   onAddPage,
+  onShowTemplateModal,
   onExport,
   onExportPDF,
   onOpenEquationEditor,
@@ -67,7 +68,7 @@ export default function MainToolbar({
           </button>
           
           {showPageModeMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 min-w-[160px]">
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-[100] min-w-[160px]">
               <button
                 onClick={() => {
                   onAddPage("document");
@@ -83,15 +84,28 @@ export default function MainToolbar({
               </button>
               <button
                 onClick={() => {
-                  onAddPage("free");
+                  onAddPage("blank");
                   setShowPageModeMenu(false);
                 }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 text-left text-sm font-medium text-gray-700"
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
               >
                 <Layout size={16} className="text-purple-500" />
                 <div>
-                  <div className="font-semibold">Serbest Sayfa</div>
-                  <div className="text-xs text-gray-500">Drag & drop mod</div>
+                  <div className="font-semibold">Boş Sayfa</div>
+                  <div className="text-xs text-gray-500">Sıfırdan başla</div>
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  onShowTemplateModal();
+                  setShowPageModeMenu(false);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-green-50 text-left text-sm font-medium text-gray-700"
+              >
+                <Layout size={16} className="text-green-500" />
+                <div>
+                  <div className="font-semibold">Şablondan Seç</div>
+                  <div className="text-xs text-gray-500">Hazır düzenler</div>
                 </div>
               </button>
             </div>

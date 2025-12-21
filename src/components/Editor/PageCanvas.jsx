@@ -350,6 +350,7 @@ export default function PageCanvas({
               width={img.width}
               height={img.height}
               angle={img.angle}
+              borderRadius={img.borderRadius}
               isActive={img.id === activeImage}
               onClick={() => {
                 setActiveImage(img.id);

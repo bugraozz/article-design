@@ -20,7 +20,8 @@ import TableInputModal from "../components/Modals/TableInputModal";
 import MathSymbolPanel from "../components/Panels/MathSymbolPanel";
 import EquationTemplatesPanel from "../components/Panels/EquationTemplatesPanel";
 import TableOverlay from "../overlays/TableOverlay";
-import { defaultCoverPage, defaultArticleSettings } from "../types/article";
+import { defaultCoverPage, defaultArticleSettings, pageTemplates } from "../types/article";
+import PageTemplateModal from "../components/Modals/PageTemplateModal";
 
 export default function EditorPage() {
   const [articleSettings, setArticleSettings] = useState(defaultArticleSettings);
@@ -61,6 +62,7 @@ export default function EditorPage() {
   const [showMathSymbolPanel, setShowMathSymbolPanel] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showEquationTemplatesPanel, setShowEquationTemplatesPanel] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   
   // Aktif tablo ve hücre takibi
   const [activeTable, setActiveTable] = useState(null);
@@ -277,36 +279,17 @@ export default function EditorPage() {
     }, 50);
   };
 
-  const addPage = (mode = "free") => {
-    const newPageMode = mode;
-
+  const addPage = (templateKey = "blank") => {
+    const newId = pages.length ? pages[pages.length - 1].id + 1 : 1;
+    
     setPages((prev) => {
-      const newId = prev.length ? prev[prev.length - 1].id + 1 : 1;
-      
-      // Eğer belge modu ise minimal sayfa
-      if (newPageMode === "document") {
-        return [
-          ...prev,
-          {
-            id: newId,
-            title: `Sayfa ${newId}`,
-            type: "content",
-            mode: "document",
-            overlays: [],
-            images: [],
-            tables: [],
-            documentContent: "",
-            pageSettings: {
-              marginTop: articleSettings.pageMarginTop,
-              marginBottom: articleSettings.pageMarginBottom,
-              marginLeft: articleSettings.pageMarginLeft,
-              marginRight: articleSettings.pageMarginRight,
-            },
-          },
-        ];
+      // Şablondan sayfa oluştur
+      const template = pageTemplates[templateKey];
+      if (template) {
+        return [...prev, template.create(newId, articleSettings)];
       }
       
-      // Serbest mod - text box ile
+      // Fallback: Boş sayfa
       return [
         ...prev,
         {
@@ -314,23 +297,7 @@ export default function EditorPage() {
           title: `Sayfa ${newId}`,
           type: "content",
           mode: "free",
-          overlays: [
-            {
-              id: crypto.randomUUID(),
-              type: "text",
-              html: "<p>İçerik burada başlayacak...</p>",
-              x: articleSettings.pageMarginLeft,
-              y: articleSettings.pageMarginTop,
-              width: 400,
-              height: 80,
-              fontSize: articleSettings.bodyFontSize,
-              color: articleSettings.bodyColor,
-              lineHeight: articleSettings.bodyLineHeight,
-              textIndent: articleSettings.paragraphIndent,
-              titleFontSize: articleSettings.titleFontSize,
-              titleColor: articleSettings.titleColor,
-            },
-          ],
+          overlays: [],
           images: [],
           tables: [],
           documentContent: "",
@@ -344,7 +311,7 @@ export default function EditorPage() {
       ];
     });
 
-    setActivePageId((prev) => prev + 1);
+    setActivePageId(newId);
     setActiveOverlay(null);
     setInlineEditingId(null);
   };
@@ -804,8 +771,51 @@ export default function EditorPage() {
   // ---------------------------
   const addImageToSelectedArea = () => {
     const targetId = contextMenu.targetId;
+    const targetType = contextMenu.targetType;
     if (!targetId || !activePage) return;
 
+    // Eğer image üzerine sağ tıklandıysa, mevcut görselin src'sini değiştir
+    if (targetType === 'image') {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (f) {
+          const data = f.target.result;
+
+          // Mevcut görselin src'sini güncelle
+          setPages((prev) =>
+            prev.map((p) =>
+              p.id === activePageId
+                ? {
+                    ...p,
+                    images: p.images.map((img) =>
+                      img.id === targetId
+                        ? { ...img, src: data }
+                        : img
+                    ),
+                  }
+                : p
+            )
+          );
+
+          setContextMenu({ visible: false, x: 0, y: 0, targetId: null, targetType: null });
+          alert("✅ Görsel güncellendi!");
+        };
+
+        reader.readAsDataURL(file);
+      };
+
+      input.click();
+      return;
+    }
+
+    // Text overlay için eski mantık
     const overlay = activePage.overlays.find((o) => o.id === targetId);
     if (!overlay) return;
 
@@ -1345,6 +1355,7 @@ export default function EditorPage() {
         onExport={exportPNG}
         onExportPDF={exportPDF}
         onAddPage={addPage}
+        onShowTemplateModal={() => setShowTemplateModal(true)}
         onOpenEquationEditor={handleOpenEquationEditor}
         onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
         cleanView={cleanView}
@@ -1362,6 +1373,14 @@ export default function EditorPage() {
             setActiveOverlay(null);
             setInlineEditingId(null);
             setContextMenu((prev) => ({ ...prev, visible: false }));
+            
+            // Sayfaya scroll yap
+            setTimeout(() => {
+              const pageElement = document.getElementById(`page-${id}`);
+              if (pageElement) {
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 50);
           }}
           onAddPage={addPage}
           onChangePageMode={(pageId, newMode) => {
@@ -2455,6 +2474,15 @@ export default function EditorPage() {
         <EquationTemplatesPanel
           onInsert={(latex) => handleInsertEquation(latex, "block")}
           onClose={() => setShowEquationTemplatesPanel(false)}
+        />
+      )}
+
+      {/* SAYFA ŞABLONU SEÇİM MODALI */}
+      {showTemplateModal && (
+        <PageTemplateModal
+          isOpen={showTemplateModal}
+          onClose={() => setShowTemplateModal(false)}
+          onSelectTemplate={(templateKey) => addPage(templateKey)}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ export default function ImageOverlay({
   width,
   height,
   angle,
+  borderRadius,
   isActive,
   onClick,
   onRightClick,
@@ -188,19 +189,41 @@ export default function ImageOverlay({
         onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'image');
       }}
     >
-      <img
-        src={src}
-        alt="overlay"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          border: isActive ? "2px solid #10b981" : "1px dashed rgba(16, 185, 129, 0.3)",
-          borderRadius: "4px",
-          pointerEvents: "none",
-          boxShadow: isActive ? "0 0 0 2px rgba(16, 185, 129, 0.2)" : "none",
-        }}
-      />
+      {src ? (
+        <img
+          src={src}
+          alt="overlay"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            border: isActive ? "2px solid #10b981" : "1px dashed rgba(16, 185, 129, 0.3)",
+            borderRadius: borderRadius || "4px",
+            pointerEvents: "none",
+            boxShadow: isActive ? "0 0 0 2px rgba(16, 185, 129, 0.2)" : "none",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f3f4f6",
+            border: isActive ? "2px solid #10b981" : "2px dashed #d1d5db",
+            borderRadius: borderRadius || "4px",
+            color: "#9ca3af",
+            fontSize: "14px",
+            fontWeight: "500",
+            pointerEvents: "none",
+            boxShadow: isActive ? "0 0 0 2px rgba(16, 185, 129, 0.2)" : "none",
+          }}
+        >
+          🖼️ Görsel Ekle
+        </div>
+      )}
 
       {/* Resize Handles */}
       {isActive && (
