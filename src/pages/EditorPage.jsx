@@ -1399,7 +1399,7 @@ export default function EditorPage() {
         <div className="flex-1 overflow-y-auto bg-gray-100">
           {/* Sticky Toolbar - Belge Modu Kontrolleri */}
           {!cleanView && activePage?.mode === "document" && currentEditor && (
-            <div className="sticky top-0 z-[100] bg-white border-b border-gray-200 shadow-lg w-full">
+            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
               <DocumentToolbar 
                 editor={currentEditor}
                 onOpenEquationEditor={handleOpenEquationEditor}
@@ -1410,7 +1410,7 @@ export default function EditorPage() {
 
           {/* Sticky Toolbar - Serbest Mod Kontrolleri */}
           {!cleanView && activePage?.mode === "free" && currentEditor && (
-            <div className="sticky top-0 z-[100] bg-white border-b border-gray-200 shadow-lg w-full">
+            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
               <DocumentToolbar 
                 editor={currentEditor}
                 onOpenEquationEditor={handleOpenEquationEditor}
@@ -1432,7 +1432,7 @@ export default function EditorPage() {
 
           {/* Eski Custom Toolbar - Yedek */}
           {!cleanView && activePage?.mode === "free" && false && (
-            <div className="sticky top-0 z-[100] bg-white border-b border-gray-200 shadow-lg w-full">
+            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
               <div className="flex items-center justify-between px-6 py-2 gap-4">
                 {/* Sol Grup - Format Kontrolleri */}
                 <div className="flex items-center gap-1 flex-wrap">

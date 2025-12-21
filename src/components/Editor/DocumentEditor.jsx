@@ -139,10 +139,26 @@ export default function DocumentEditor({
   const handleContextMenu = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Viewport içindeki pozisyonu hesapla
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    // Context menu boyutlarını tahmin et
+    const menuWidth = 200;
+    const menuHeight = 300;
+    
+    // Ekran dışına taşarsa pozisyonu ayarla
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    const adjustedX = x + menuWidth > viewportWidth ? viewportWidth - menuWidth - 10 : x;
+    const adjustedY = y + menuHeight > viewportHeight ? viewportHeight - menuHeight - 10 : y;
+    
     setContextMenu({
       visible: true,
-      x: e.clientX,
-      y: e.clientY,
+      x: adjustedX,
+      y: adjustedY,
     });
   };
 

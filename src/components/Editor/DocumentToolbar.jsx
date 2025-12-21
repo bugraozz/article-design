@@ -494,7 +494,7 @@ export default function DocumentToolbar({
           border-bottom: 1px solid #e0e0e0;
           position: sticky;
           top: 0;
-          z-index: 5;
+          z-index: 0;
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
           min-height: 36px;
           width: 100%;
