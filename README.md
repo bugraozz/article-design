@@ -1,21 +1,92 @@
-# 🎨 Article Design Editor - Profesyonel Matematik Sistemi
+# 📄 Article Design Editor - Profesyonel Makale Tasarım Editörü
 
-Modern, profesyonel matematiksel denklem ve sembol düzenleme sistemi.
+Modern, profesyonel makale ve doküman tasarım editörü. Word, InDesign ve LaTeX'in en iyi özelliklerini bir araya getiren güçlü bir araç.
 
-## ✨ Özellikler
+## ✨ Temel Özellikler
 
-- 🧮 **Professional Math Rendering** - KaTeX + MathJax entegrasyon
-- ✏️ **Character-by-Character Editing** - Her matematiksel eleman ayrı düzenlenebilir
-- 🔄 **Multi-Format Support** - LaTeX, MathML, OMML (Word) formatları
-- 📄 **Word Integration** - Word'den formül direkt yapıştırabilme
-- 🛡️ **Security** - XSS koruması ve input sanitization
-- 📱 **Responsive Design** - Desktop, tablet, mobile uyumlu
-- ⚡ **Performance** - Optimized rendering, lazy loading
-- 🎨 **Beautiful UI** - Professional CSS styling
+### 🎨 Çift Mod Desteği
+- **📋 Belge Modu** - Word benzeri akışkan yazı editörü
+- **🎯 Serbest Mod** - Drag & drop ile tam kontrol, InDesign tarzı düzenleme
+
+### 📚 21 Profesyonel Sayfa Şablonu
+**Temel Şablonlar:**
+- 📄 Boş Sayfa - Tam özgürlük
+- 📝 Tek Sütun - Klasik makale düzeni
+- 📋 Belge Modu - Word benzeri akışkan yazı
+- ❓ SSS/FAQ - Soru-cevap formatı
+- 🔢 Adım Adım Rehber - Numaralı talimatlar
+- 📞 İletişim - İletişim bilgileri sayfası
+
+**Düzen Şablonları:**
+- 📰 İki Sütun - Gazete/dergi formatı
+- 🖼️ Görsel + Metin - Görsel destekli içerik
+- 📑 Üç Sütun - Broşür/bülten formatı
+- ⚖️ Karşılaştırma - İki öge yan yana
+- 💰 Fiyat Planları - Üç seviye karşılaştırma
+
+**Akademik Şablonlar:**
+- 🎓 Akademik Makale - Yazar fotoğrafı, özet, anahtar kelimeler
+- 📊 Tablo + Metin - Veri sunumu için ideal
+- 📈 Rapor Sayfası - İş raporları için
+- 📄 Özgeçmiş/CV - Profesyonel CV formatı
+
+**Yaratıcı Şablonlar:**
+- 🎨 Poster/Afiş - Görsel sunum formatı
+- 📅 Zaman Çizelgesi - Kronolojik akış
+- 💼 Portfolyo - Proje vitrin sayfası
+- 📖 Kapak Sayfası - Doküman girişi
+- 🖼️ Galeri - Çoklu görsel sunum (4 görsel ızgara)
+- 🎁 Ürün Tanıtımı - Ürün özellikleri sayfası
+
+### 🧮 Gelişmiş Matematik Sistemi
+- **KaTeX Entegrasyonu** - Hızlı ve profesyonel matematik render
+- **LaTeX Desteği** - Inline ve block matematik denklemleri
+- **Denklem Şablonları** - Hazır matematik şablonları
+- **Sembol Paneli** - 50+ matematik sembolü
+- **Live Preview** - Anlık önizleme
+
+### 📝 Zengin Metin Editörü (TipTap)
+- **Temel Formatlama** - Bold, italic, underline, strikethrough
+- **Başlıklar** - H1, H2, H3 desteği
+- **Hizalama** - Sol, orta, sağ, justify
+- **Listeler** - Sıralı ve sırasız listeler
+- **Renkler** - Metin rengi ve highlight
+- **Tablolar** - Dinamik tablo oluşturma ve düzenleme
+
+### 🎯 Serbest Mod Özellikleri
+- **Drag & Drop** - Her element sürüklenebilir
+- **Yeniden Boyutlandırma** - 8 yönlü resize handle
+- **Grid Sistemi** - Snap-to-grid desteği
+- **Kılavuz Çizgileri** - Hizalama yardımcıları
+- **Zoom** - 50%-200% arası yakınlaştırma
+- **Katmanlar** - Z-index yönetimi
+
+### 🖼️ Görsel Yönetimi
+- **Drag & Drop Upload** - Sürükle bırak ile yükleme
+- **Yuvarlak Görsel Desteği** - Border-radius özelleştirme
+- **Boyutlandırma** - Özgür boyutlandırma
+- **Placeholder** - Görsel yok iken "Görsel Ekle" göstergesi
+
+### 📊 Tablo Özellikleri
+- **Dinamik Tablo** - Satır/sütun ekleme-silme
+- **Hücre Düzenleme** - Her hücre ayrı düzenlenebilir
+- **Stil Özelleştirme** - Kenarlık, arka plan, padding
+- **Right-Click Menü** - Bağlamsal menü
+
+### 🎨 Makale Ayarları
+- **Sayfa Kenar Boşlukları** - Top, bottom, left, right margin
+- **Başlık Stili** - Font boyutu ve renk
+- **Gövde Metni** - Font boyutu, renk, satır yüksekliği
+- **Paragraf Girintisi** - İlk satır girintisi
+
+### 📤 Export Özellikleri
+- **PNG Export** - Yüksek kaliteli görüntü
+- **PDF Export** - Çok sayfalı PDF oluşturma
+- **Temiz Görünüm** - Grid ve kontrolleri gizle
 
 ## 🚀 Hızlı Başlangıç
 
-### Installation
+### Kurulum
 
 ```bash
 npm install
@@ -35,174 +106,240 @@ Tarayıcıda aç: `http://localhost:5173`
 npm run build
 ```
 
-## 📚 Dokümantasyon
+### Production Preview
 
-Detaylı kılavuzlar mevcuttur:
-
-| Dokuman | Amaç |
-|---------|------|
-| [QUICK_START.md](./QUICK_START.md) | 5-20 dakikada başla |
-| [API_REFERENCE.md](./API_REFERENCE.md) | Detaylı API docu |
-| [MATH_SYSTEM_GUIDE.md](./MATH_SYSTEM_GUIDE.md) | Sistem kılavuzu |
-| [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) | Teknik özet |
-| [PROJECT_COMPLETION_REPORT.md](./PROJECT_COMPLETION_REPORT.md) | Tamamlanma raporu |
-
-## 🎓 Kullanım Örnekleri
-
-### 1. Basit Math Rendering
-
-```jsx
-import ProfessionalMathRenderer from "./components/ProfessionalMathRenderer";
-
-<ProfessionalMathRenderer
-  content="\frac{a}{b}"
-  type="latex"
-/>
+```bash
+npm run preview
 ```
 
-### 2. Düzenlenebilir Math
+## 📦 Teknolojiler
 
-```jsx
-const [latex, setLatex] = useState("\\frac{a}{b}");
+### Core
+- **React 18.3** - UI framework
+- **Vite 6.0** - Build tool
+- **Tailwind CSS 3.4** - Styling
 
-<ProfessionalMathRenderer
-  content={latex}
-  editable={true}
-  onEdit={setLatex}
-/>
+### Editör
+- **TipTap** - Rich text editor
+  - @tiptap/react
+  - @tiptap/starter-kit
+  - @tiptap/extension-table
+  - @tiptap/extension-text-align
+  - @tiptap/extension-highlight
+
+### Matematik
+- **KaTeX 0.16** - Math rendering
+- **MathJS 14.1** - Math computations
+
+### Export
+- **html2canvas 1.4** - DOM to canvas
+- **jsPDF 2.5** - PDF generation
+- **html2pdf.js 0.10** - HTML to PDF
+
+### UI & Icons
+- **Lucide React 0.469** - Modern icons
+
+## 🎯 Kullanım Kılavuzu
+
+### 1. Yeni Sayfa Ekleme
+
+Üst menüden **"Sayfa"** butonuna tıklayın:
+- **Belge Sayfası** - Word gibi editör
+- **Boş Sayfa** - Sıfırdan başla
+- **Şablondan Seç** - 21 hazır şablon
+
+### 2. Metin Ekleme
+
+**Serbest Modda:**
+- Toolbar'dan "Metin" butonuna tıklayın
+- Sayfa üzerine tıklayıp konumlandırın
+- Yazmaya başlayın
+
+**Belge Modunda:**
+- Direkt yazmaya başlayın
+- TipTap toolbar kullanarak formatla
+
+### 3. Görsel Ekleme
+
+**Yöntem 1:** Toolbar'dan "Görsel" butonu
+**Yöntem 2:** Sağ tıklayıp "Görsel Ekle"
+**Yöntem 3:** Placeholder alana sağ tık
+
+### 4. Matematik Denklem Ekleme
+
+- **Σ** butonuna tıklayın
+- LaTeX formatında denklem girin
+- Örnek: `\frac{a}{b}`, `\sqrt{x}`, `x^2`
+- Şablon veya sembol panelinden seçim yapın
+
+### 5. Tablo Ekleme
+
+- **Grid** butonuna tıklayın
+- Satır ve sütun sayısı girin
+- Hücrelere çift tıklayarak düzenleyin
+
+### 6. Stil ve Format
+
+**Metin Özellikleri Paneli:**
+- Font boyutu, renk
+- Hizalama, satır yüksekliği
+- Bold, italic, underline
+
+**Makale Ayarları:**
+- Sayfa kenar boşlukları
+- Başlık ve gövde stilleri
+- Paragraf girintisi
+
+### 7. Export
+
+**PNG olarak:**
+- "PNG" butonuna tıklayın
+- Temiz görünüm otomatik aktif
+
+**PDF olarak:**
+- "PDF" butonuna tıklayın
+- Tüm sayfalar tek PDF'te
+
+## 🎨 Klavye Kısayolları
+
+### Genel
+- `Ctrl/Cmd + B` - Bold
+- `Ctrl/Cmd + I` - Italic
+- `Ctrl/Cmd + U` - Underline
+
+### TipTap Editör
+- `Ctrl/Cmd + Shift + L` - Sola hizala
+- `Ctrl/Cmd + Shift + E` - Ortala
+- `Ctrl/Cmd + Shift + R` - Sağa hizala
+- `Ctrl/Cmd + Shift + J` - İki yana yasla
+
+## 📁 Proje Yapısı
+
+```
+article-design/
+├── src/
+│   ├── components/
+│   │   ├── Editor/
+│   │   │   ├── DocumentEditor.jsx      # Belge modu editörü
+│   │   │   ├── DocumentToolbar.jsx     # Belge modu toolbar
+│   │   │   ├── PageCanvas.jsx          # Serbest mod canvas
+│   │   │   ├── PagesPanel.jsx          # Sol sayfa paneli
+│   │   │   └── RulerOverlay.jsx        # Cetvel overlay
+│   │   ├── Modals/
+│   │   │   ├── PageTemplateModal.jsx   # Şablon seçim modal
+│   │   │   ├── EquationEditorModal.jsx # Denklem editörü
+│   │   │   └── TableInputModal.jsx     # Tablo oluşturma
+│   │   ├── Panels/
+│   │   │   ├── ArticleSettingsPanel.jsx    # Makale ayarları
+│   │   │   ├── TextPropertiesPanel.jsx     # Metin özellikleri
+│   │   │   ├── MathSymbolPanel.jsx         # Matematik sembolleri
+│   │   │   └── EquationTemplatesPanel.jsx  # Denklem şablonları
+│   │   ├── Toolbar/
+│   │   │   └── MainToolbar.jsx         # Ana toolbar
+│   │   └── MathRenderer.jsx            # Matematik render
+│   ├── overlays/
+│   │   ├── TextOverlay.jsx             # Metin kutusu
+│   │   ├── ImageOverlay.jsx            # Görsel overlay
+│   │   └── TableOverlay.jsx            # Tablo overlay
+│   ├── extensions/
+│   │   ├── CustomColor.js              # TipTap renk
+│   │   ├── FontSize.js                 # TipTap font boyutu
+│   │   ├── MathExtension.js            # TipTap matematik
+│   │   └── DraggableTable.js           # Sürüklenebilir tablo
+│   ├── types/
+│   │   └── article.js                  # Şablonlar ve ayarlar
+│   ├── utils/
+│   │   ├── mathProcessor.js            # Matematik işleme
+│   │   ├── mathRenderer.js             # Render yardımcıları
+│   │   └── equationManager.js          # Denklem yönetimi
+│   ├── styles/
+│   │   ├── DocumentEditor.css
+│   │   ├── TiptapEditor.css
+│   │   └── ProfessionalMath.css
+│   ├── pages/
+│   │   ├── HomePage.jsx                # Ana sayfa
+│   │   └── EditorPage.jsx              # Editör sayfası
+│   └── App.jsx
+├── public/
+├── vite.config.js                      # Vite yapılandırma
+├── tailwind.config.js                  # Tailwind yapılandırma
+└── package.json
 ```
 
-### 3. Character Editor
+## 🎨 Özelleştirme
 
-```jsx
-import { CharacterMathEditor } from "./components/ProfessionalMathRenderer";
-import { MathElement } from "./utils/mathSystem";
+### Kendi Şablonunuzu Ekleme
 
-const element = new MathElement("fraction", { 
-  numerator: "a", 
-  denominator: "b" 
-});
-
-<CharacterMathEditor
-  mathElement={element}
-  onUpdate={(updated) => {
-    console.log(updated.toLatex());
-  }}
-/>
-```
-
-## 🔄 Desteklenen Formatlar
-
-```
-Giriş: LaTeX, MathML, OMML (Word)
-Çıkış: LaTeX, MathML, HTML
-Dönüşüm: Tüm kombinasyonlar ↔
-```
-
-### Örnekler
+`src/types/article.js` dosyasına yeni şablon ekleyin:
 
 ```javascript
-// LaTeX
-\frac{a}{b}                  // Kesir
-\sqrt{x}                     // Karekök
-x^{2}                        // Üs
-x_{n}                        // Alt indeks
-\sum_{i=1}^{n} a_i          // Toplam
-\int_{0}^{1} f(x) dx        // İntegral
+export const pageTemplates = {
+  // ... mevcut şablonlar
+  
+  customTemplate: {
+    name: "Özel Şablon",
+    description: "Açıklama",
+    icon: "🎯",
+    category: "basic", // basic, layout, academic, creative
+    features: ["Özellik 1", "Özellik 2"],
+    create: (id, settings) => ({
+      id,
+      title: `Sayfa ${id}`,
+      type: "content",
+      mode: "free", // veya "document"
+      overlays: [
+        // Metin kutuları
+      ],
+      images: [
+        // Görsel alanları
+      ],
+      tables: [
+        // Tablolar
+      ],
+      documentContent: "",
+      pageSettings: {
+        marginTop: settings.pageMarginTop,
+        marginBottom: settings.pageMarginBottom,
+        marginLeft: settings.pageMarginLeft,
+        marginRight: settings.pageMarginRight,
+      },
+    }),
+  },
+};
 ```
 
-## 🧪 Test
+## 🐛 Bilinen Sorunlar ve Çözümler
 
-Demo sayfasını ziyaret et:
+### Build Uyarıları
+Büyük chunk'lar için `vite.config.js`'de manual chunks yapılandırması eklenmiştir.
 
-```
-http://localhost:5173/advanced-math-demo
-```
 
-**Demo'da test edebilirsin:**
-- ✅ LaTeX rendering
-- ✅ Professional renderer
-- ✅ Character editor
-- ✅ Format converter
-- ✅ 8 örnek formül
 
-## 🏗️ Sistem Mimarisi
+## 📝 Lisans
 
-```
-src/
-├── utils/
-│   ├── mathSystem.js                (Unified math system)
-│   ├── advancedMathProcessor.js      (Render engine)
-│   └── ... (existing)
-│
-├── components/
-│   ├── ProfessionalMathRenderer.jsx  (React components)
-│   └── ... (existing)
-│
-├── styles/
-│   ├── ProfessionalMath.css         (Professional styling)
-│   └── ... (existing)
-│
-└── pages/
-    ├── AdvancedMathEditorDemo.jsx    (Demo page)
-    └── ... (existing)
-```
+MIT License - Detaylar için LICENSE dosyasına bakın
 
-## 🛡️ Güvenlik
 
-- ✅ XSS Koruması (XSS attacks blocked)
-- ✅ Input Sanitization (HTML temizleme)
-- ✅ Safe LaTeX Processing (Tehlikeli komutlar kaldırılıyor)
 
-```javascript
-import { MathSanitizer } from "./utils/mathSystem";
+## 🙏 Teşekkürler
 
-const safe = MathSanitizer.sanitizeMathML(userInput);
-```
+- [TipTap](https://tiptap.dev/) - Harika rich text editör
+- [KaTeX](https://katex.org/) - Hızlı matematik render
+- [Lucide](https://lucide.dev/) - Modern ikonlar
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
 
-## ⚡ Performance
+## 📊 İstatistikler
 
-- **KaTeX Rendering:** < 100ms
-- **MathJax Fallback:** < 500ms
-- **Debounce:** 300ms (updates)
-- **Memory:** Optimized & cached
+- **Toplam Şablon:** 21
+- **Desteklenen Format:** 3 (LaTeX, Inline, Block)
+- **Matematik Sembolleri:** 50+
+- **Denklem Şablonları:** 15+
+- **Kod Satırı:** ~10,000+
 
-## 📦 Dependencies
 
-```json
-{
-  "react": "^19.2.0",
-  "katex": "^0.16.27",
-  "mathjax": "^3.2.2",
-  "@tiptap/react": "^3.11.0",
-  "dompurify": "^3.0.6"
-}
-```
 
-## 🎨 CSS
 
-Professional CSS styling mevcuttur:
 
-```css
-.professional-math-renderer { }
-.character-math-editor { }
-.equation-code { }
-.math-error { }
-```
-
-Özelleştirme:
-
-```jsx
-<ProfessionalMathRenderer
-  content={latex}
-  style={{
-    padding: "20px",
-    fontSize: "18px",
-    backgroundColor: "#f9fafb"
-  }}
-  className="custom-class"
-/>
-```
 
 ## 📱 Responsive
 
@@ -210,43 +347,9 @@ Professional CSS styling mevcuttur:
 - **Tablet (768-1024px):** Scaled
 - **Mobile (< 768px):** Optimized
 
-## 🔧 Configuration
 
-### MathJax (Optional)
 
-```javascript
-// advancedMathProcessor.js'de
-window.MathJax = {
-  tex: {
-    inlineMath: [["$", "$"]],
-    displayMath: [["$$", "$$"]]
-  }
-};
-```
 
-## 🐛 Troubleshooting
-
-### Math render gösterilmiyor?
-
-```javascript
-// App.jsx'de initialization kontrol et
-import { initializeMathSystem } from "./utils/advancedMathProcessor";
-
-useEffect(() => {
-  initializeMathSystem();
-}, []);
-```
-
-### Word paste çalışmıyor?
-
-```javascript
-// TextOverlay'de OMML detection kontrol et
-if (htmlData.includes("<m:oMath")) {
-  // OMML başarıyla algılandı
-}
-```
-
-Daha fazla bilgi: [MATH_SYSTEM_GUIDE.md](./MATH_SYSTEM_GUIDE.md)
 
 ## 📖 Kaynaklar
 
@@ -263,25 +366,11 @@ Daha fazla bilgi: [MATH_SYSTEM_GUIDE.md](./MATH_SYSTEM_GUIDE.md)
 - ⏳ Real-time collaboration
 - ⏳ Export to PDF/SVG
 
-## 📄 Lisans
 
-MIT License - Özgürce kullanabilirsin
-
-## 🤝 Katkı
-
-Geliştirmelere ve bug report'larına açığız!
-
-## 📞 Support
-
-- 📚 Dokümantasyon: [QUICK_START.md](./QUICK_START.md)
-- 🔍 API Reference: [API_REFERENCE.md](./API_REFERENCE.md)
-- 🧪 Test Page: `/advanced-math-demo`
-
----
 
 **Status:** ✅ Production Ready  
 **Version:** 1.0.0  
-**Last Updated:** 11 Dec 2025
 
-🚀 **Başlamaya hazır mısın?** → [QUICK_START.md](./QUICK_START.md)
+
+
 
