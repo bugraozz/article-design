@@ -30,6 +30,8 @@ export default function TextOverlay({
   textIndent,
   titleFontSize,
   titleColor,
+  autoResize = true,
+  locked = false,
   isActive,
   isEditing,
   onClick,
@@ -113,6 +115,8 @@ export default function TextOverlay({
         const newHtml = editor.getHTML();
         console.log('📝 TextOverlay onUpdate:', newHtml);
         onInlineChange?.(newHtml);
+
+        if (!autoResize) return;
         
         // İçerik güncellenince container boyutunu otomatik ayarla
         setTimeout(() => {
@@ -156,6 +160,7 @@ export default function TextOverlay({
 
   // Editor mounting ve content güncellemesi için effect
   useEffect(() => {
+    if (!autoResize) return;
     if (editor && html) {
       const currentHtml = editor.getHTML();
       // İlk mount veya dışarıdan gelen HTML editörden farklıysa güncelle
@@ -197,6 +202,7 @@ export default function TextOverlay({
 
   // Font boyutu, lineHeight veya diğer stil değişikliklerinde boyutu ayarla
   useEffect(() => {
+    if (!autoResize) return;
     if (editor && editorContainerRef.current) {
       setTimeout(() => {
         if (editorContainerRef.current) {
@@ -303,6 +309,9 @@ export default function TextOverlay({
   }, [guides]);
 
   const handleMouseDown = (e) => {
+    // Eğer locked ise hiçbir şey yapma
+    if (locked || presentationMode) return;
+    
     // Eğer resize handle üzerinde ise
     const target = e.target;
     if (target.dataset.resize) {
@@ -437,7 +446,7 @@ export default function TextOverlay({
         transform: `rotate(${rotate || 0}deg)`,
         transformOrigin: "top left",
         pointerEvents: "auto",
-        cursor: isDragging ? "grabbing" : isActive && !isEditing ? "grab" : "text",
+        cursor: isDragging ? "grabbing" : (id === "authors" || id === "institution" || id === "contact") ? "pointer" : (isActive && !isEditing ? "grab" : "text"),
         boxSizing: "border-box",
       }}
       onMouseDown={handleMouseDown}
@@ -455,7 +464,35 @@ export default function TextOverlay({
         onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'text');
       }}
     >
-      {isEditing ? (
+      {/* Yazar, kurum ve iletişim overlay'ları için özel davranış - düzenlenemez statik metin */}
+      {(id === "authors" || id === "institution" || id === "contact") ? (
+        <div
+          style={{
+            outline: "none",
+            whiteSpace: "pre-wrap",
+            border: presentationMode ? "none" : isActive ? "2px solid #3b82f6" : "1px dashed rgba(59, 130, 246, 0.2)",
+            borderRadius: "4px",
+            padding: "8px",
+            backgroundColor: isActive ? "rgba(59, 130, 246, 0.05)" : "transparent",
+            transition: "all 0.2s ease",
+            height: "100%",
+            overflow: "visible",
+            boxShadow: isActive ? "0 0 0 2px rgba(59, 130, 246, 0.1)" : "none",
+            fontSize: fontSize ? `${fontSize}px` : "14px",
+            color: color || "#000000",
+            lineHeight: lineHeight || 1.4,
+            boxSizing: "border-box",
+            wordWrap: "break-word",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            '--paragraph-font-size': fontSize ? `${fontSize}px` : '14px',
+            '--default-text-color': color || '#000000',
+            '--heading-font-size': titleFontSize ? `${titleFontSize}px` : 'inherit',
+            '--heading-color': titleColor || color || '#000000',
+          }}
+          dangerouslySetInnerHTML={{ __html: processMathInHTML(html) }}
+        />
+      ) : isEditing ? (
         <div
           ref={editorContainerRef}
           style={{
@@ -572,7 +609,8 @@ export default function TextOverlay({
       )}
 
       {/* Resize Handles - Sadece aktif, editing değilken ve presentationMode false ise göster */}
-      {isActive && !isEditing && !presentationMode && (
+      {/* Yazar, kurum ve iletişim overlay'ları resize edilemez */}
+      {isActive && !isEditing && !presentationMode && !locked && (id !== "authors" && id !== "institution" && id !== "contact") && (
         <>
           <ResizeHandle direction="nw" />
           <ResizeHandle direction="ne" />

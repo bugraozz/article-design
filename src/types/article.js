@@ -453,18 +453,22 @@ export const pageTemplates = {
     }),
   },
 
-  // Akademik makale şablonu
+  // Akademik makale şablonu - Cumhuriyet Dental Journal formatı
   academicPaper: {
-    name: "Akademik Makale",
-    description: "Bilimsel çalışmalar için",
+    name: "Bilimsel Makale",
+    description: "Dergi formatında akademik makale",
     icon: "🎓",
     category: "academic",
-    features: ["Yazar Fotoğrafı", "Özet", "Anahtar Kelimeler"],
+    features: ["Dergi Başlığı", "DOI/ISSN", "İki Sütun", "Abstract"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const photoSize = 100; // Yuvarlak fotoğraf boyutu
-      const textStartX = settings.pageMarginLeft + photoSize + 20; // Fotoğraftan sonra metin başlangıcı
-      const textWidth = contentWidth - photoSize - 20;
+      const margin = 30;
+      const contentWidth = 734;
+      // Dental Journal görünümünde: solda dar bilgi kolonu + sağda ana içerik kolonu
+      const sideColWidth = 165;
+      const gap = 16;
+      const sideColX = margin;
+      const mainColX = sideColX + sideColWidth + gap;
+      const mainColWidth = contentWidth - sideColWidth - gap;
       
       return {
         id,
@@ -472,82 +476,305 @@ export const pageTemplates = {
         type: "content",
         mode: "free",
         overlays: [
+          // 1. Logo (sol üst)
           {
             id: crypto.randomUUID(),
-            type: "text",
-            html: "<h1>Makale Başlığı</h1>",
-            x: textStartX,
-            y: settings.pageMarginTop,
-            width: textWidth,
-            height: 60,
-            fontSize: 22,
-            color: settings.titleColor,
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p><em>Yazar Adı, Kurum</em></p><p style='font-size: 10px; margin-top: 5px;'>E-posta: ornek@kurum.edu.tr</p>",
-            x: textStartX,
-            y: settings.pageMarginTop + 70,
-            width: textWidth,
-            height: 50,
-            fontSize: 12,
-            color: "#666666",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h3>Özet</h3><p>Bu çalışma...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 140,
-            width: contentWidth,
-            height: 150,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p><strong>Anahtar Kelimeler:</strong> kelime1, kelime2, kelime3</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 305,
-            width: contentWidth,
-            height: 50,
-            fontSize: 11,
-            color: "#555555",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h3>Giriş</h3><p>İçerik...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 370,
-            width: contentWidth,
-            height: 250,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-        ],
-        images: [
-          {
-            id: crypto.randomUUID(),
+            type: "image",
             src: null,
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop,
-            width: photoSize,
-            height: photoSize,
-            borderRadius: '50%', // Yuvarlak yapma özelliği
+            x: sideColX,
+            y: 10,
+            width: 60,
+            height: 60,
+            borderRadius: 50,
+          },
+          
+          // 2. Dergi bilgisi (sağ üst)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="text-align: right; margin: 0; line-height: 1.3;">Cumhuriyet Dental Journal, ?(?): ???-???, ????<br/>DOI: ????????????????????</p>`,
+            x: 460,
+            y: 12,
+            width: 194,
+            height: 28,
+            fontSize: 7.5,
+            color: "#0066cc",
+          },
+          
+          // 3. Dergi başlığı (ortada)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<h1 style="text-align: center; margin: 0; line-height: 1.2;">Cumhuriyet Dental Journal</h1>`,
+            x: 140,
+            y: 46,
+            width: 414,
+            height: 20,
+            fontSize: 16,
+            fontWeight: "bold",
+            color: "#1a1a1a",
+          },
+          
+          // 4. Alt bilgi satırı
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="font-size: 7px; border-top: 0.5px solid #ccc; padding-top: 3px; margin: 0; line-height: 1.2;">e@l: cumhuriyet.edu.tr&nbsp;&nbsp;&nbsp;Founded: 2002&nbsp;&nbsp;&nbsp;Available online, ISSN: ????-????&nbsp;&nbsp;&nbsp;Publisher: Sivas Cumhuriyet Üniversitesi</p>`,
+            x: sideColX,
+            y: 72,
+            width: contentWidth,
+            height: 12,
+            fontSize: 7,
+            color: "#666",
+          },
+          
+          // 5. Makale başlığı (mavi)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<h2 style="margin: 0; line-height: 1.25;">Farklı Dolum Teknikleri ile Üretilmiş Posterior Kompozit Restorasyonların Marjinal Mikrosızıntılarının Karşılaştırılması</h2>`,
+            x: sideColX,
+            y: 92,
+            width: contentWidth,
+            height: 42,
+            fontSize: 13.5,
+            fontWeight: "bold",
+            color: "#0066cc",
+          },
+          
+          // 6. Yazar adı
+          {
+            id: "authors", // ID ekledik
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="margin: 0;"><strong>Yazar Adı Soyadı</strong><sup>1,*</sup></p>`,
+            x: sideColX,
+            y: 140,
+            width: contentWidth,
+            height: 14,
+            fontSize: 10,
+            color: "#1a1a1a",
+          },
+          
+          // 7. Kurum bilgisi
+          {
+            id: "institution", // ID ekledik
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="font-size: 8px; font-style: italic; margin: 0; line-height: 1.3;"><sup>1</sup>Üniversite / Fakülte / Bölüm, Şehir, TÜRKİYE<br/><sup>*</sup>Corresponding author</p>`,
+            x: sideColX,
+            y: 156,
+            width: contentWidth,
+            height: 22,
+            fontSize: 8,
+            color: "#555",
+          },
+          
+          // 8. Sol sidebar: Research Article
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<div style="background: #f8f8f8; border-left: 3px solid #0066cc; padding: 4px 7px;"><strong>Research Article</strong></div>`,
+            x: sideColX,
+            y: 196,
+            width: sideColWidth,
+            height: 18,
+            fontSize: 9,
+            fontWeight: "bold",
+            color: "#1a1a1a",
+          },
+          
+          // 9. Ana kolon: ABSTRACT başlığı
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<div style="background: #f8f8f8; border-left: 3px solid #0066cc; padding: 4px 7px;"><strong>ABSTRACT</strong></div>`,
+            x: mainColX,
+            y: 196,
+            width: mainColWidth,
+            height: 18,
+            fontSize: 9,
+            fontWeight: "bold",
+            color: "#1a1a1a",
+          },
+
+          // 10. Sol sidebar: History
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="margin: 0; line-height: 1.4;"><strong>History</strong><br/><em>Received: ??/??/????</em><br/><em>Accepted: ??/??/????</em><br/><em>Published: ??/??/????</em></p>`,
+            x: sideColX,
+            y: 222,
+            width: sideColWidth,
+            height: 58,
+            fontSize: 7.5,
+            color: "#666",
+          },
+          
+          // 11. Ana kolon: Abstract metni
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="text-align: justify; margin: 0; line-height: 1.5;">Bu alanda İngilizce özet (Abstract) metni yer alır. Metin, dergi formatındaki satır aralığına uygun olacak şekilde gerekçeli hizalanır. Örnek amaçlı içerik: Çalışmanın amacı, yöntemleri, bulguları ve sonuçları kısaca özetlenir. Klinik/deneysel çalışma türüne göre temel istatistiksel veya sonuç bilgileri belirtilir.</p>`,
+            x: mainColX,
+            y: 212,
+            width: mainColWidth,
+            height: 340,
+            fontSize: 8,
+            color: "#333",
+          },
+          
+          // 12. Ana kolon: Keywords
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="margin: 0; line-height: 1.4;"><strong>Keywords:</strong> Keyword 1, Keyword 2, Keyword 3, Keyword 4.</p>`,
+            x: mainColX,
+            y: 560,
+            width: mainColWidth,
+            height: 24,
+            fontSize: 8,
+            color: "#333",
+          },
+
+          // 13. Ana kolon: Türkçe başlık
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<h3 style="margin: 0; line-height: 1.25;">Farklı Dolum Teknikleri ile Üretilmiş Posterior Kompozit Restorasyonların Marjinal Mikrosızıntılarının Karşılaştırılması</h3>`,
+            x: mainColX,
+            y: 592,
+            width: mainColWidth,
+            height: 36,
+            fontSize: 9.5,
+            fontWeight: "bold",
+            color: "#0066cc",
+          },
+          
+          // 14. Ana kolon: Öz başlığı
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<div style="background: #f8f8f8; border-left: 3px solid #0066cc; padding: 4px 7px;"><strong>Öz</strong></div>`,
+            x: mainColX,
+            y: 634,
+            width: mainColWidth,
+            height: 18,
+            fontSize: 8.5,
+            fontWeight: "bold",
+            color: "#1a1a1a",
+          },
+          
+          // 15. Ana kolon: Türkçe özet metni
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="text-align: justify; margin: 0; line-height: 1.5;">Bu alanda Türkçe özet metni yer alır. Özet; amaç, yöntem, bulgular ve sonuçlar şeklinde kısa ve anlaşılır olarak yazılır. Dergi şablonunda metin gerekçeli hizalanır ve satır aralığı kompakt tutulur.</p>`,
+            x: mainColX,
+            y: 658,
+            width: mainColWidth,
+            height: 260,
+            fontSize: 8,
+            color: "#333",
+          },
+
+          // 16. Sol sidebar: Copyright
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="margin: 0; line-height: 1.4;"><strong>Copyright</strong><br/><em>This work is licensed under<br/>Creative Commons Attribution 4.0<br/>International License</em></p>`,
+            x: sideColX,
+            y: 648,
+            width: sideColWidth,
+            height: 64,
+            fontSize: 7,
+            color: "#555",
+          },
+
+          // 17. İletişim / ORCID (tam sayfa genişliği)
+          {
+            id: "contact", // ID ekledik
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="margin: 0; line-height: 1.4;">ⓐ corresponding@author.com&nbsp;&nbsp;&nbsp;&nbsp;                              ⓞ 0000-0000-0000-0000</p>`,
+            x: sideColX,
+            y: 1020,
+            width: contentWidth,
+            height: 20,
+            fontSize: 8,
+            color: "#666",
+          },
+
+          // 18. How to Cite (alt bant)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="font-style: italic; margin: 0; border-top: 0.5px solid #ddd; padding-top: 5px; line-height: 1.4; text-align: center;"><strong>How to Cite:</strong> Yazar A, (????) Makale Başlığı, Cumhuriyet Dental Journal, ?(?): ???-???</p>`,
+            x: sideColX,
+            y: 1048,
+            width: contentWidth,
+            height: 30,
+            fontSize: 6.5,
+            color: "#666",
+          },
+          
+          // 20. Sayfa numarası
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            autoResize: false,
+            locked: true,
+            html: `<p style="text-align: center; margin: 0;">523</p>`,
+            x: 650,
+            y: 1100,
+            width: 45,
+            height: 16,
+            fontSize: 8.5,
+            color: "#999",
           },
         ],
+        images: [],
         tables: [],
         documentContent: "",
         pageSettings: {
-          marginTop: settings.pageMarginTop,
-          marginBottom: settings.pageMarginBottom,
-          marginLeft: settings.pageMarginLeft,
-          marginRight: settings.pageMarginRight,
+          // Free-mode şablonlarda x/y koordinatları zaten margin içerir.
+          // PageCanvas ayrıca padding uyguladığı için burada margin vermek
+          // "çifte margin" oluşturur ve sayfanın altını boş bırakıp içeriği sıkıştırır.
+          marginTop: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          marginRight: 0,
         },
       };
     },

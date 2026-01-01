@@ -22,12 +22,15 @@ export default function MainToolbar({
   onShowTemplateModal,
   onExport,
   onExportPDF,
+  onExportAdobePDF,
+  onExportAdobeWord,
   onOpenEquationEditor,
   onOpenMathSymbolPanel,
   cleanView = false,
   onToggleCleanView,
 }) {
   const [showPageModeMenu, setShowPageModeMenu] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   return (
     <div className="w-full bg-white border-b border-gray-200 px-6 py-3 flex gap-4 items-center shadow-sm">
       {/* Sol Grup - İçerik Ekleme */}
@@ -151,7 +154,7 @@ export default function MainToolbar({
       </button>
 
       {/* Sağ Grup - Dışa Aktarma */}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center relative">
         <span className="text-xs font-semibold text-gray-500 tracking-wide uppercase">Dışa Aktar</span>
         
         <button
@@ -167,8 +170,62 @@ export default function MainToolbar({
           className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-rose-400 hover:bg-rose-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
         >
           <FileText size={18} className="text-rose-500" />
-          PDF
+          PDF (Basit)
         </button>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-150 font-medium text-sm hover:shadow-lg"
+          >
+            <FileText size={18} />
+            Adobe Export ▾
+          </button>
+
+          {showExportMenu && (
+            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl z-[100] min-w-[220px]">
+              <div className="px-3 py-2 bg-gradient-to-r from-red-50 to-orange-50 border-b border-gray-200">
+                <div className="text-xs font-bold text-red-700 flex items-center gap-1">
+                  <FileText size={14} />
+                  Adobe PDF Services
+                </div>
+                <div className="text-xs text-gray-600">Profesyonel kalite</div>
+              </div>
+
+              <button
+                onClick={() => {
+                  onExportAdobePDF?.();
+                  setShowExportMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
+              >
+                <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
+                  <FileText size={16} className="text-red-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">PDF Export</div>
+                  <div className="text-xs text-gray-500">Vektörel, yüksek kalite</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  onExportAdobeWord?.();
+                  setShowExportMenu(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-left text-sm font-medium text-gray-700"
+              >
+                <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
+                  <FileText size={16} className="text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-800">Word Export</div>
+                  <div className="text-xs text-gray-500">Düzenlenebilir .docx</div>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ export default function PageCanvas({
   onImageChange,
   onTableChange,
   onRightClick,
+  onOverlayClick, // Yeni prop
   onCellEdit, // Yeni callback
   inlineEditingId,
   setInlineEditingId,
@@ -102,7 +103,7 @@ export default function PageCanvas({
         {!presentationMode && showGrid && (
           <svg
             className="absolute top-0 left-0 pointer-events-none"
-            style={{ zIndex: 2, width: 794, height: 1123 }}
+            style={{ zIndex: 2, width: 768, height: 1104 }}
           >
             <defs>
               <pattern
@@ -135,8 +136,8 @@ export default function PageCanvas({
                 />
               </pattern>
             </defs>
-            <rect width={794} height={1123} fill="url(#grid)" />
-            <rect width={794} height={1123} fill="url(#grid-major)" />
+            <rect width={768} height={1104} fill="url(#grid)" />
+            <rect width={768} height={1104} fill="url(#grid-major)" />
           </svg>
         )}
 
@@ -151,7 +152,7 @@ export default function PageCanvas({
               x1={pageMargin}
               y1={0}
               x2={pageMargin}
-              y2={1123}
+              y2={1104}
               stroke="#ef4444"
               strokeWidth="1"
               strokeDasharray="4,4"
@@ -159,10 +160,10 @@ export default function PageCanvas({
             />
             {/* Sağ margin */}
             <line
-              x1={794 - pageMargin}
+              x1={768 - pageMargin}
               y1={0}
-              x2={794 - pageMargin}
-              y2={1123}
+              x2={768 - pageMargin}
+              y2={1104}
               stroke="#ef4444"
               strokeWidth="1"
               strokeDasharray="4,4"
@@ -172,7 +173,7 @@ export default function PageCanvas({
             <line
               x1={0}
               y1={pageMargin}
-              x2={794}
+              x2={768}
               y2={pageMargin}
               stroke="#ef4444"
               strokeWidth="1"
@@ -182,9 +183,9 @@ export default function PageCanvas({
             {/* Alt margin */}
             <line
               x1={0}
-              y1={1123 - pageMargin}
-              x2={794}
-              y2={1123 - pageMargin}
+              y1={1104 - pageMargin}
+              x2={768}
+              y2={1104 - pageMargin}
               stroke="#ef4444"
               strokeWidth="1"
               strokeDasharray="4,4"
@@ -199,8 +200,8 @@ export default function PageCanvas({
             className="absolute top-0 left-0"
             style={{
               zIndex: 4,
-              width: 794,
-              height: 1123,
+              width: 768,
+              height: 1104,
               cursor: "crosshair",
             }}
           >
@@ -210,7 +211,7 @@ export default function PageCanvas({
                   key={`h-${idx}`}
                   x1={0}
                   y1={guide.position}
-                  x2={794}
+                  x2={768}
                   y2={guide.position}
                   stroke="#3b82f6"
                   strokeWidth="1"
@@ -250,7 +251,7 @@ export default function PageCanvas({
                   x1={guide.position}
                   y1={0}
                   x2={guide.position}
-                  y2={1123}
+                  y2={1104}
                   stroke="#3b82f6"
                   strokeWidth="1"
                   strokeDasharray="2,2"
@@ -309,17 +310,29 @@ export default function PageCanvas({
               textIndent={item.textIndent}
               titleFontSize={item.titleFontSize}
               titleColor={item.titleColor}
+              autoResize={item.autoResize}
+              locked={item.locked}
               isActive={item.id === activeOverlay}
               isEditing={item.id === inlineEditingId}
               onClick={() => {
-                setActiveOverlay(item.id);
-                setInlineEditingId(item.id); // Seçildiğinde düzenleme moduna da geç
-                setActiveImage(null);
-                setActiveTable(null);
+                // Özel overlay'ler için custom handler kullan
+                if (onOverlayClick && (item.id === "authors" || item.id === "institution" || item.id === "contact")) {
+                  onOverlayClick(item.id);
+                } else {
+                  setActiveOverlay(item.id);
+                  setInlineEditingId(item.id); // Seçildiğinde düzenleme moduna da geç
+                  setActiveImage(null);
+                  setActiveTable(null);
+                }
               }}
               onDoubleClick={() => {
-                setActiveOverlay(item.id);
-                setInlineEditingId(item.id);
+                // Özel overlay'ler için custom handler kullan
+                if (onOverlayClick && (item.id === "authors" || item.id === "institution" || item.id === "contact")) {
+                  onOverlayClick(item.id);
+                } else {
+                  setActiveOverlay(item.id);
+                  setInlineEditingId(item.id);
+                }
               }}
               onRightClick={onRightClick}
               onInlineChange={(newHtml) =>

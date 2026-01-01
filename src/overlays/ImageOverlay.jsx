@@ -198,7 +198,7 @@ export default function ImageOverlay({
             height: "100%",
             objectFit: "cover",
             border: isActive ? "2px solid #10b981" : "1px dashed rgba(16, 185, 129, 0.3)",
-            borderRadius: borderRadius || "4px",
+            borderRadius: borderRadius !== undefined ? `${borderRadius}%` : "4px",
             pointerEvents: "none",
             boxShadow: isActive ? "0 0 0 2px rgba(16, 185, 129, 0.2)" : "none",
           }}
@@ -213,7 +213,7 @@ export default function ImageOverlay({
             justifyContent: "center",
             backgroundColor: "#f3f4f6",
             border: isActive ? "2px solid #10b981" : "2px dashed #d1d5db",
-            borderRadius: borderRadius || "4px",
+            borderRadius: borderRadius !== undefined ? `${borderRadius}%` : "4px",
             color: "#9ca3af",
             fontSize: "14px",
             fontWeight: "500",

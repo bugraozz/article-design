@@ -22,13 +22,20 @@ import EquationTemplatesPanel from "../components/Panels/EquationTemplatesPanel"
 import TableOverlay from "../overlays/TableOverlay";
 import { defaultCoverPage, defaultArticleSettings, pageTemplates } from "../types/article";
 import PageTemplateModal from "../components/Modals/PageTemplateModal";
+import AuthorInputModal from "../components/Modals/AuthorInputModal";
+import InstitutionInputModal from "../components/Modals/InstitutionInputModal";
+import ContactInputModal from "../components/Modals/ContactInputModal";
+import adobeService from "../services/adobeService";
+import { convertPagesToHTML, parseDocumentToPages } from "../utils/documentConverter";
+import { useLocation } from "react-router-dom";
 
 export default function EditorPage() {
+  const location = useLocation();
   const [articleSettings, setArticleSettings] = useState(defaultArticleSettings);
   
-  const [pages, setPages] = useState([
-    defaultCoverPage(1, "free"),
-  ]);
+  const [pages, setPages] = useState(
+    location.state?.pages || [defaultCoverPage(1, "free")]
+  );
 
   const [activePageId, setActivePageId] = useState(1);
   const [activeOverlay, setActiveOverlay] = useState(null);
@@ -63,6 +70,14 @@ export default function EditorPage() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showEquationTemplatesPanel, setShowEquationTemplatesPanel] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  
+  // Yazar ve kurum bilgileri modalları
+  const [showAuthorModal, setShowAuthorModal] = useState(false);
+  const [showInstitutionModal, setShowInstitutionModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [authors, setAuthors] = useState([]);
+  const [institutions, setInstitutions] = useState([]);
+  const [contacts, setContacts] = useState([]);
   
   // Aktif tablo ve hücre takibi
   const [activeTable, setActiveTable] = useState(null);
@@ -317,6 +332,146 @@ export default function EditorPage() {
   };
 
   // ---------------------------
+  //  YAZAR VE KURUM BİLGİLERİ
+  // ---------------------------
+  
+  // Yazar bilgilerini güncelle
+  const handleSaveAuthors = (authorList) => {
+    setAuthors(authorList);
+    
+    // Tüm sayfalardaki authors overlay'ini güncelle (sadece cover değil)
+    setPages((prev) =>
+      prev.map((page) => {
+        return {
+          ...page,
+          overlays: page.overlays.map((overlay) => {
+            if (overlay.id === "authors") {
+              // Yazarları formatla: Yazar Adı¹*, Diğer Yazar²
+              const formattedAuthors = authorList
+                .map((author) => {
+                  const name = author.name;
+                  const affiliation = author.affiliation ? `<sup>${author.affiliation}</sup>` : "";
+                  return `${name}${affiliation}`;
+                })
+                .join(", ");
+              
+              // Cover page için farklı format
+              if (page.type === "cover") {
+                return {
+                  ...overlay,
+                  html: `<p>${formattedAuthors}</p>`,
+                };
+              } else {
+                // Diğer sayfalar için (cumhuriyetDental gibi) inline format
+                return {
+                  ...overlay,
+                  html: `<p style="margin: 0;"><strong>${formattedAuthors}</strong></p>`,
+                };
+              }
+            }
+            return overlay;
+          }),
+        };
+      })
+    );
+  };
+
+  // Kurum bilgilerini güncelle
+  const handleSaveInstitutions = (institutionList) => {
+    setInstitutions(institutionList);
+    
+    // Tüm sayfalardaki institution overlay'ini güncelle (sadece cover değil)
+    setPages((prev) =>
+      prev.map((page) => {
+        return {
+          ...page,
+          overlays: page.overlays.map((overlay) => {
+            if (overlay.id === "institution") {
+              // Kurumları formatla
+              const formattedInstitutions = institutionList
+                .map((inst) => {
+                  const parts = [];
+                  if (inst.university) parts.push(inst.university);
+                  if (inst.faculty) parts.push(inst.faculty);
+                  if (inst.department) parts.push(inst.department);
+                  if (inst.city) parts.push(inst.city);
+                  if (inst.country) parts.push(inst.country);
+                  
+                  const institutionText = parts.join(" / ");
+                  return `<sup>${inst.number}</sup>${institutionText}`;
+                })
+                .join("<br/>");
+              
+              // Cover page için farklı format
+              if (page.type === "cover") {
+                return {
+                  ...overlay,
+                  html: `<p>${formattedInstitutions}</p>`,
+                };
+              } else {
+                // Diğer sayfalar için (cumhuriyetDental gibi) küçük font ve italic
+                return {
+                  ...overlay,
+                  html: `<p style="font-size: 8px; font-style: italic; margin: 0; line-height: 1.3;">${formattedInstitutions}<br/><sup>*</sup>Corresponding author</p>`,
+                };
+              }
+            }
+            return overlay;
+          }),
+        };
+      })
+    );
+  };
+
+  // İletişim bilgilerini güncelle
+  const handleSaveContacts = (contactList) => {
+    setContacts(contactList);
+    
+    // Tüm sayfalardaki contact overlay'ini güncelle
+    setPages((prev) =>
+      prev.map((page) => {
+        return {
+          ...page,
+          overlays: page.overlays.map((overlay) => {
+            if (overlay.id === "contact") {
+              // İletişim bilgilerini formatla - yan yana gösterim için
+              const formattedContacts = contactList
+                .map((contact) => {
+                  const parts = [];
+                  if (contact.email) parts.push(`ⓐ ${contact.email}`);
+                  if (contact.orcid) parts.push(`ⓞ ${contact.orcid}`);
+                  if (contact.phone) parts.push(`☎ ${contact.phone}`);
+                  return parts.join("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"); // Yan yana - daha fazla boşluk
+                })
+                .join("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"); // Birden fazla kişi varsa yan yana - daha fazla boşluk
+              
+              return {
+                ...overlay,
+                html: `<p style="margin: 0; line-height: 1.4;">${formattedContacts}</p>`,
+              };
+            }
+            return overlay;
+          }),
+        };
+      })
+    );
+  };
+
+  // Yazar, kurum veya iletişim overlay'ine tıklandığında modal aç
+  const handleOverlayClick = (overlayId) => {
+    if (overlayId === "authors") {
+      setShowAuthorModal(true);
+    } else if (overlayId === "institution") {
+      setShowInstitutionModal(true);
+    } else if (overlayId === "contact") {
+      setShowContactModal(true);
+    } else {
+      setActiveOverlay(overlayId);
+      setInlineEditingId(overlayId);
+    }
+  };
+
+  // ---------------------------
   //  MATEMATİK FONKSİYONLARI
   // ---------------------------
   
@@ -556,6 +711,89 @@ export default function EditorPage() {
     } finally {
       // Temiz modu eski haline döndür
       if (!wasCleanView) setCleanView(false);
+    }
+  };
+
+  // ---------------------------
+  //  ADOBE PDF EXPORT - Profesyonel PDF (Adobe API kullanarak)
+  // ---------------------------
+  const exportAdobePDF = async () => {
+    try {
+      console.log("🔴 ADOBE PDF EXPORT BAŞLIYOR");
+      
+      // Sayfaları HTML'e dönüştür
+      const htmlContent = convertPagesToHTML(pages, articleSettings);
+      console.log("📄 HTML hazırlandı");
+      
+      // Adobe API ile PDF oluştur
+      const result = await adobeService.htmlToPdf(htmlContent, 'makale.pdf');
+      console.log("✅ PDF oluşturuldu");
+      
+      // Base64'ten blob'a çevir
+      const base64Data = result.data.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // İndir
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename || `makale_${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      alert("PDF başarıyla oluşturuldu!");
+    } catch (error) {
+      console.error("❌ Adobe PDF export hatası:", error);
+      alert("PDF oluşturulurken hata oluştu. Lütfen Adobe API ayarlarınızı kontrol edin.");
+    }
+  };
+
+  // ---------------------------
+  //  ADOBE WORD EXPORT - Word belgesi (DOCX)
+  // ---------------------------
+  const exportAdobeWord = async () => {
+    try {
+      console.log("🔴 ADOBE WORD EXPORT BAŞLIYOR");
+      
+      // Önce HTML'den PDF oluştur
+      const htmlContent = convertPagesToHTML(pages, articleSettings);
+      const pdfResult = await adobeService.htmlToPdf(htmlContent);
+      console.log("📄 PDF ara dosyası oluşturuldu");
+      
+      // PDF'i Word'e çevir (base64 data gönder)
+      const wordResult = await adobeService.pdfToWord(pdfResult.data);
+      console.log("✅ Word belgesi oluşturuldu");
+      
+      // Base64'ten blob'a çevir
+      const base64Data = wordResult.data.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const wordBlob = new Blob([byteArray], { 
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
+      });
+      
+      // İndir
+      const url = URL.createObjectURL(wordBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = wordResult.filename || `makale_${Date.now()}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      alert("Word belgesi başarıyla oluşturuldu!");
+    } catch (error) {
+      console.error("❌ Adobe Word export hatası:", error);
+      alert("Word belgesi oluşturulurken hata oluştu. Lütfen Adobe API ayarlarınızı kontrol edin.");
     }
   };
 
@@ -1354,6 +1592,8 @@ export default function EditorPage() {
         onAddTable={addTable}
         onExport={exportPNG}
         onExportPDF={exportPDF}
+        onExportAdobePDF={exportAdobePDF}
+        onExportAdobeWord={exportAdobeWord}
         onAddPage={addPage}
         onShowTemplateModal={() => setShowTemplateModal(true)}
         onOpenEquationEditor={handleOpenEquationEditor}
@@ -1797,6 +2037,7 @@ export default function EditorPage() {
                     onImageChange={handleImageChange}
                     onTableChange={handleTableChange}
                     onRightClick={handleRightClick}
+                    onOverlayClick={page.id === activePageId ? handleOverlayClick : () => {}}
                     onCellEdit={(tableId, row, col) => {
                       if (page.id === activePageId) {
                         setActiveTableCell({ tableId, row, col });
@@ -2483,6 +2724,36 @@ export default function EditorPage() {
           isOpen={showTemplateModal}
           onClose={() => setShowTemplateModal(false)}
           onSelectTemplate={(templateKey) => addPage(templateKey)}
+        />
+      )}
+
+      {/* YAZAR BİLGİLERİ MODALI */}
+      {showAuthorModal && (
+        <AuthorInputModal
+          isOpen={showAuthorModal}
+          onClose={() => setShowAuthorModal(false)}
+          onSave={handleSaveAuthors}
+          initialAuthors={authors}
+        />
+      )}
+
+      {/* KURUM BİLGİLERİ MODALI */}
+      {showInstitutionModal && (
+        <InstitutionInputModal
+          isOpen={showInstitutionModal}
+          onClose={() => setShowInstitutionModal(false)}
+          onSave={handleSaveInstitutions}
+          initialInstitutions={institutions}
+        />
+      )}
+
+      {/* İLETİŞİM BİLGİLERİ MODALI */}
+      {showContactModal && (
+        <ContactInputModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          onSave={handleSaveContacts}
+          initialContacts={contacts}
         />
       )}
     </div>
