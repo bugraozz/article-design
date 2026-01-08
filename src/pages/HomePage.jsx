@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import adobeService from "../services/adobeService";
-import { parseDocumentToPages } from "../utils/documentConverter";
+import { parseDocument } from "../utils/documentParser";
+import { renderPdfToPages } from "../utils/pdfRenderer";
 
 export default function HomePage() {
   const nav = useNavigate();
@@ -15,25 +16,40 @@ export default function HomePage() {
     try {
       console.log(`📄 ${fileType} dosyası yükleniyor:`, file.name);
       
-      let extractedData;
+      let parsedContent;
       
-      // Word dosyası için: Word → PDF → Extract pipeline
+      // Word dosyası için: Adobe Extract API kullan (Word → PDF → Extract)
+      // Bu sayede orijinal sayfa yapısı korunur
       if (fileType === 'Word') {
-        extractedData = await adobeService.wordToPdfAndExtract(file);
+        console.log("📄 Word dosyası Adobe Extract API ile işleniyor...");
+        const extractedData = await adobeService.wordToPdfAndExtract(file);
+        console.log("✅ Word içeriği Adobe Extract API ile çıkarıldı:", extractedData);
+        
+        // Adobe Extract → HTML sayfalarına dönüştür (PDF okuyucu gibi)
+        const pages = renderPdfToPages(extractedData);
+        console.log("✅ Word sayfaları oluşturuldu:", pages.length);
+        
+        nav("/editor", { state: { pages } });
       } 
-      // PDF dosyası için: Doğrudan Extract
+      // PDF dosyası için: Dosyayı olduğu gibi kaydet ve Adobe Embed API ile göster
       else {
-        extractedData = await adobeService.extractDocument(file);
+        // PDF'i base64'e çevir
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const pdfBase64 = e.target.result; // data:application/pdf;base64,...
+          
+          // Adobe Embed API ile görüntülemek için PDF'i direkt kaydet
+          nav("/editor", { 
+            state: { 
+              pdfFile: pdfBase64,
+              fileName: file.name,
+              mode: 'pdf-viewer' 
+            } 
+          });
+        };
+        reader.readAsDataURL(file);
       }
       
-      console.log("✅ İçerik Adobe SDK ile çıkarıldı:", extractedData);
-      
-      // Sayfalara dönüştür
-      const pages = parseDocumentToPages(extractedData);
-      console.log("✅ Sayfalar oluşturuldu:", pages.length);
-      
-      // Editor'e geç ve sayfaları gönder
-      nav("/editor", { state: { pages } });
     } catch (error) {
       console.error(`❌ ${fileType} yükleme hatası:`, error);
       alert(`Dosya yüklenirken hata oluştu: ${error.message}\n\nLütfen backend sunucusunun çalıştığından emin olun.`);

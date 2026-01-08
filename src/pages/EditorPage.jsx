@@ -11,6 +11,8 @@ import MainToolbar from "../components/Toolbar/MainToolbar";
 import PagesPanel from "../components/Editor/PagesPanel";
 import PageCanvas from "../components/Editor/PageCanvas";
 import DocumentEditor from "../components/Editor/DocumentEditor";
+import PdfViewer from "../components/Editor/PdfViewer";
+import AdobePdfViewer from "../components/Editor/AdobePdfViewer";
 import DocumentToolbar from "../components/Editor/DocumentToolbar";
 import TextPropertiesPanel from "../components/Panels/TextPropertiesPanel";
 import TablePropertiesPanel from "../components/Panels/TablePropertiesPanel";
@@ -33,9 +35,23 @@ export default function EditorPage() {
   const location = useLocation();
   const [articleSettings, setArticleSettings] = useState(defaultArticleSettings);
   
-  const [pages, setPages] = useState(
-    location.state?.pages || [defaultCoverPage(1, "free")]
-  );
+  // PDF Viewer mode kontrolü
+  const pdfViewerMode = location.state?.mode === 'pdf-viewer';
+  const pdfFile = location.state?.pdfFile;
+  const pdfFileName = location.state?.fileName;
+  
+  const [pages, setPages] = useState(() => {
+    const importedPages = location.state?.pages;
+    
+    if (!importedPages) {
+      return [defaultCoverPage(1, "free")];
+    }
+    
+    // Import edilen sayfalar zaten doğru formatta gelir:
+    // { id, mode: 'document', documentContent: HTML, overlays: [], images: [], tables: [] }
+    console.log(`📄 ${importedPages.length} sayfa import edildi`);
+    return importedPages;
+  });
 
   const [activePageId, setActivePageId] = useState(1);
   const [activeOverlay, setActiveOverlay] = useState(null);
@@ -1585,6 +1601,26 @@ export default function EditorPage() {
         setContextMenu((prev) => ({ ...prev, visible: false }));
       }}
     >
+      {/* PDF VIEWER MODE - Adobe Embed API ile birebir görüntüleme */}
+      {pdfViewerMode && pdfFile ? (
+        <div className="w-full h-full flex flex-col">
+          <div className="bg-gray-800 text-white px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-semibold">📄 {pdfFileName}</span>
+              <span className="text-sm text-gray-400">Adobe PDF Viewer</span>
+            </div>
+            <button
+              onClick={() => window.history.back()}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+            >
+              ← Geri Dön
+            </button>
+          </div>
+          <AdobePdfViewer pdfUrl={pdfFile} fileName={pdfFileName} />
+        </div>
+      ) : (
+        // NORMAL EDITOR MODE
+        <>
       {/* ÜST TOOLBAR */}
       <MainToolbar
         onAddText={addText}
@@ -2060,34 +2096,42 @@ export default function EditorPage() {
 
                 {/* Belge Modu Editör */}
                 {page.mode === "document" && (
-                  <div className="bg-white shadow-2xl" style={{ width: 794, height: 1123, overflow: "hidden" }}>
-                    {page.id === activePageId ? (
-                      <DocumentEditor
-                        content={page.documentContent || ""}
-                        onChange={(newContent) => {
-                          setPages((prev) =>
-                            prev.map((p) =>
-                              p.id === page.id
-                                ? { ...p, documentContent: newContent }
-                                : p
-                            )
-                          );
-                        }}
-                        onEditorReady={setCurrentEditor}
-                        articleSettings={articleSettings}
-                        onOpenEquationEditor={handleOpenEquationEditor}
-                        onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-                      />
+                  <div className="bg-white shadow-2xl" style={{ overflow: "auto", maxWidth: '100%', maxHeight: '100%' }}>
+                    {/* Eğer import edilmiş PDF/Word ise (absolute positioning HTML içeriyorsa) */}
+                    {page.documentContent && page.documentContent.includes('position: absolute') ? (
+                      <PdfViewer htmlContent={page.documentContent} />
                     ) : (
-                      <div 
-                        className="w-full h-full p-16 overflow-hidden"
-                        dangerouslySetInnerHTML={{ __html: page.documentContent || "<p>Boş sayfa</p>" }}
-                        style={{
-                          fontSize: `${articleSettings.bodyFontSize}px`,
-                          lineHeight: articleSettings.bodyLineHeight,
-                          color: articleSettings.bodyColor,
-                        }}
-                      />
+                      // Normal TipTap editör - A4 boyutunda
+                      <div style={{ width: 794, height: 1123 }}>
+                        {page.id === activePageId ? (
+                          <DocumentEditor
+                            content={page.documentContent || ""}
+                            onChange={(newContent) => {
+                              setPages((prev) =>
+                                prev.map((p) =>
+                                  p.id === page.id
+                                    ? { ...p, documentContent: newContent }
+                                    : p
+                                )
+                              );
+                            }}
+                            onEditorReady={setCurrentEditor}
+                            articleSettings={articleSettings}
+                            onOpenEquationEditor={handleOpenEquationEditor}
+                            onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+                          />
+                        ) : (
+                          <div 
+                            className="w-full h-full p-16 overflow-hidden"
+                            dangerouslySetInnerHTML={{ __html: page.documentContent || "<p>Boş sayfa</p>" }}
+                            style={{
+                              fontSize: `${articleSettings.bodyFontSize}px`,
+                              lineHeight: articleSettings.bodyLineHeight,
+                              color: articleSettings.bodyColor,
+                            }}
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -2755,6 +2799,8 @@ export default function EditorPage() {
           onSave={handleSaveContacts}
           initialContacts={contacts}
         />
+      )}
+      </>
       )}
     </div>
   );

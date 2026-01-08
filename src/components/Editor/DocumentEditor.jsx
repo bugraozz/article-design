@@ -27,6 +27,25 @@ export default function DocumentEditor({
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
 
+  // Content'i parse et - JSON string ise parse et, değilse direkt kullan
+  const parsedContent = (() => {
+    if (!content) return "<p>Yazmaya başlayın...</p>";
+    
+    try {
+      // JSON string mi kontrol et
+      if (typeof content === 'string' && content.trim().startsWith('{')) {
+        const jsonContent = JSON.parse(content);
+        console.log('📄 TipTap JSON content loaded:', jsonContent);
+        return jsonContent;
+      }
+      // HTML string ise direkt kullan
+      return content;
+    } catch (error) {
+      console.warn('⚠️ Content parse hatası, HTML olarak kullanılıyor:', error);
+      return content;
+    }
+  })();
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -104,7 +123,7 @@ export default function DocumentEditor({
       MathInline,
       MathBlock,
     ],
-    content: content || "<p>Yazmaya başlayın...</p>",
+    content: parsedContent,
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML());
     },
@@ -125,6 +144,26 @@ export default function DocumentEditor({
       onEditorReady?.(editor);
     }
   }, [editor, onEditorReady]);
+
+  // Content değiştiğinde editor'ü güncelle
+  useEffect(() => {
+    if (editor && content) {
+      try {
+        // JSON string ise parse et
+        if (typeof content === 'string' && content.trim().startsWith('{')) {
+          const jsonContent = JSON.parse(content);
+          editor.commands.setContent(jsonContent);
+          console.log('🔄 Editor content updated with JSON');
+        } else if (editor.getHTML() !== content) {
+          // HTML ise direkt set et
+          editor.commands.setContent(content);
+          console.log('🔄 Editor content updated with HTML');
+        }
+      } catch (error) {
+        console.warn('⚠️ Content update hatası:', error);
+      }
+    }
+  }, [content, editor]);
 
   // Sağ tık menüsünü kapat
   useEffect(() => {

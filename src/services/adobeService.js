@@ -127,51 +127,60 @@ class AdobeService {
   }
 
   /**
-   * Convert Word to PDF then extract (via backend) - For Word document import
+   * Import Word document using Mammoth.js (via backend)
    */
-  async wordToPdfAndExtract(file) {
+  async importWord(file) {
     try {
-      console.log('📄 Converting Word to PDF and extracting content...');
+      console.log('📄 Importing Word document with Mammoth.js...');
 
       const formData = new FormData();
       formData.append('file', file);
 
-      // Önce Word'ü PDF'e çevir
-      const pdfResponse = await fetch(`${this.backendUrl}/api/word-to-pdf`, {
+      const response = await fetch(`${this.backendUrl}/api/import-word`, {
         method: 'POST',
         body: formData,
       });
 
-      if (!pdfResponse.ok) {
-        const error = await pdfResponse.json();
-        throw new Error(error.details || 'Word to PDF conversion failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Word import failed');
       }
 
-      const pdfData = await pdfResponse.json();
-      console.log('✅ Word converted to PDF');
+      const data = await response.json();
+      console.log('✅ Word document imported successfully');
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Word import error:', error);
+      throw error;
+    }
+  }
 
-      // PDF'i base64'ten blob'a çevir
-      const pdfBase64 = pdfData.pdf.replace(/^data:application\/pdf;base64,/, '');
-      const pdfBlob = this.base64ToBlob(pdfBase64, 'application/pdf');
+  /**
+   * Convert Word to PDF then extract (via backend) - For Word document import with page structure
+   */
+  async wordToPdfAndExtract(file) {
+    try {
+      console.log('📄 Converting Word to PDF and extracting content with page structure...');
 
-      // Şimdi PDF'den içeriği çıkar
-      const extractFormData = new FormData();
-      extractFormData.append('file', pdfBlob, 'converted.pdf');
+      const formData = new FormData();
+      formData.append('file', file);
 
-      const extractResponse = await fetch(`${this.backendUrl}/api/extract-document`, {
+      const response = await fetch(`${this.backendUrl}/api/word-to-pdf-and-extract`, {
         method: 'POST',
-        body: extractFormData,
+        body: formData,
       });
 
-      if (!extractResponse.ok) {
-        const error = await extractResponse.json();
-        throw new Error(error.details || 'PDF extraction failed');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Word to PDF and extract failed');
       }
 
-      const extractedData = await extractResponse.json();
-      console.log('✅ Content extracted from converted PDF');
+      const data = await response.json();
+      console.log('✅ Word document converted and extracted with page structure');
+      console.log('📊 Total elements:', data.data?.elements?.length || 0);
       
-      return extractedData;
+      return data;
     } catch (error) {
       console.error('❌ Word to PDF and extract error:', error);
       throw error;
