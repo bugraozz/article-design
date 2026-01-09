@@ -79,6 +79,14 @@ export default function HomePage() {
         Yeni Boş Döküman Oluştur
       </button>
 
+      <button
+        onClick={() => nav("/academic-article-setup")}
+        className="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
+        disabled={isLoading}
+      >
+        Akademik Makale Oluştur
+      </button>
+
       <label className={`px-6 py-3 bg-green-600 text-white rounded-lg shadow cursor-pointer hover:bg-green-700 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
         Word Dosyası Yükle (.docx)
         <input 

@@ -1,0 +1,22 @@
+version: '3.7'
+
+services:
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora-online
+    environment:
+      - domain=your-domain\.com
+      - server_name=collabora\.your-domain\.com
+      - dictionaries=en_US
+      - username=admin
+      - password=yourpassword
+      - extra_params=--o:ssl.enable=true --o:ssl.termination=false
+    ports:
+      - "9980:9980"
+    volumes:
+      - collabora_data:/data
+    restart: always
+
+volumes:
+  collabora_data:
+    driver: local
