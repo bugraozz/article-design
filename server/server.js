@@ -36,7 +36,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -74,7 +74,7 @@ app.post('/api/html-to-pdf', async (req, res) => {
 
   try {
     const { html, filename } = req.body;
-    
+
     if (!html) {
       return res.status(400).json({ error: 'HTML content is required' });
     }
@@ -91,14 +91,13 @@ app.post('/api/html-to-pdf', async (req, res) => {
     inputFilePath = path.join(uploadsDir, `input-${Date.now()}.html`);
     fs.writeFileSync(inputFilePath, html, 'utf8');
 
-    // Initial setup, create credentials instance (from official example)
-    const credentials = new ServicePrincipalCredentials({
-      clientId: process.env.PDF_SERVICES_CLIENT_ID,
-      clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET
-    });
-
     // Creates a PDF Services instance
-    const pdfServices = new PDFServices({ credentials });
+    const pdfServices = new PDFServices({
+      credentials: new ServicePrincipalCredentials({
+        clientId: process.env.PDF_SERVICES_CLIENT_ID,
+        clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET
+      })
+    });
 
     // Creates an asset from source file and upload
     readStream = fs.createReadStream(inputFilePath);
@@ -150,11 +149,11 @@ app.post('/api/html-to-pdf', async (req, res) => {
 
   } catch (err) {
     console.error('❌ HTML to PDF error:', err);
-    
+
     if (err instanceof SDKError || err instanceof ServiceUsageError || err instanceof ServiceApiError) {
       console.log('Adobe SDK Exception:', err);
     }
-    
+
     res.status(500).json({
       error: 'PDF conversion failed',
       details: err.message
@@ -174,7 +173,7 @@ app.post('/api/pdf-to-word', async (req, res) => {
 
   try {
     const { pdf, filename } = req.body;
-    
+
     if (!pdf) {
       return res.status(400).json({ error: 'PDF data is required' });
     }
@@ -245,11 +244,11 @@ app.post('/api/pdf-to-word', async (req, res) => {
 
   } catch (err) {
     console.error('❌ PDF to Word error:', err);
-    
+
     if (err instanceof SDKError || err instanceof ServiceUsageError || err instanceof ServiceApiError) {
       console.log('Adobe SDK Exception:', err);
     }
-    
+
     res.status(500).json({
       error: 'Word conversion failed',
       details: err.message
@@ -321,11 +320,11 @@ app.post('/api/word-to-pdf', upload.single('file'), async (req, res) => {
 
   } catch (err) {
     console.error('❌ Word to PDF error:', err);
-    
+
     if (err instanceof SDKError || err instanceof ServiceUsageError || err instanceof ServiceApiError) {
       console.log('Adobe SDK Exception:', err);
     }
-    
+
     res.status(500).json({
       error: 'Word to PDF conversion failed',
       details: err.message
@@ -350,7 +349,7 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
 
     console.log('🔍 Extracting document content using Adobe SDK...');
 
-    // Initial setup, create credentials instance
+    // Initial setup, create credentials instance (from official example)
     const credentials = new ServicePrincipalCredentials({
       clientId: process.env.PDF_SERVICES_CLIENT_ID,
       clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET
@@ -401,27 +400,27 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
     const AdmZip = (await import('adm-zip')).default;
     const zip = new AdmZip(outputZipPath);
     const zipEntries = zip.getEntries();
-    
+
     let structuredData = null;
     const imageAssets = {}; // Görsel dosyalarını sakla
-    
+
     zipEntries.forEach(entry => {
       if (entry.entryName === 'structuredData.json') {
         structuredData = JSON.parse(entry.getData().toString('utf8'));
-      } 
+      }
       // Görsel dosyalarını yakala (figures/ klasöründekiler)
       else if (entry.entryName.startsWith('figures/')) {
         const imageData = entry.getData();
         const base64Image = imageData.toString('base64');
         const extension = entry.entryName.split('.').pop().toLowerCase();
         const mimeType = getMimeType(extension);
-        
+
         // Base64 data URI oluştur
         imageAssets[entry.entryName] = `data:${mimeType};base64,${base64Image}`;
         console.log(`📷 Görsel bulundu: ${entry.entryName} (${(imageData.length / 1024).toFixed(1)} KB)`);
       }
     });
-    
+
     // Görselleri structuredData'ya ekle
     if (structuredData && Object.keys(imageAssets).length > 0) {
       structuredData.imageAssets = imageAssets;
@@ -431,7 +430,7 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
     // Gerçek PDF sayfa boyutunu tespit et
     let pageWidth = 595;  // A4 default
     let pageHeight = 842;
-    
+
     // Extended metadata'dan sayfa boyutunu bul
     if (structuredData?.extended_metadata?.page_count) {
       const pageInfo = structuredData.extended_metadata;
@@ -444,7 +443,7 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
         }
       }
     }
-    
+
     // Eğer extended_metadata yoksa, elementlerin bounds'larından tahmin et
     if (pageWidth === 595 && structuredData?.elements) {
       let maxX = 0, maxY = 0;
@@ -466,7 +465,7 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
     if (structuredData) {
       console.log(`📊 Extract API sonucu: ${structuredData.elements?.length || 0} element bulundu`);
       console.log(`📏 Final PDF sayfa boyutu: ${pageWidth}pt x ${pageHeight}pt`);
-      
+
       console.log('\n📄 İlk 10 element detaylı analiz:');
       structuredData.elements?.slice(0, 10).forEach((el, idx) => {
         console.log(`\n[${idx}] Element Detayı:`);
@@ -477,7 +476,7 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
         console.log(`  Path: ${el.Path?.length || 0} items`);
         console.log(`  Type: ${el.hasOwnProperty('Text') ? 'Text' : el.hasOwnProperty('Table') ? 'Table' : el.hasOwnProperty('Figure') ? 'Figure' : 'Other'}`);
       });
-      
+
       // Sayfa dağılımını göster
       const pageDistribution = {};
       structuredData.elements?.forEach(el => {
@@ -499,11 +498,11 @@ app.post('/api/extract-document', upload.single('file'), async (req, res) => {
 
   } catch (err) {
     console.error('❌ Extract document error:', err);
-    
+
     if (err instanceof SDKError || err instanceof ServiceUsageError || err instanceof ServiceApiError) {
       console.log('Adobe SDK Exception:', err);
     }
-    
+
     res.status(500).json({
       error: 'Document extraction failed',
       details: err.message
@@ -547,7 +546,7 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
     console.log('📄 Converting Word to PDF and extracting with page structure...');
     console.log('📄 File:', req.file.originalname);
 
-    // Initial setup, create credentials instance
+    // Initial setup, create credentials instance (from official example)
     const credentials = new ServicePrincipalCredentials({
       clientId: process.env.PDF_SERVICES_CLIENT_ID,
       clientSecret: process.env.PDF_SERVICES_CLIENT_SECRET
@@ -585,7 +584,7 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
 
     // STEP 2: Extract content from PDF
     console.log('📄 Step 2: Extracting content from PDF...');
-    
+
     // Save PDF temporarily
     const tempPdfPath = path.join(__dirname, 'uploads', `temp-${Date.now()}.pdf`);
     fs.writeFileSync(tempPdfPath, pdfBuffer);
@@ -604,9 +603,9 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
     });
 
     // Create and submit extraction job
-    const extractJob = new ExtractPDFJob({ 
-      inputAsset: pdfInputAsset, 
-      params: extractParams 
+    const extractJob = new ExtractPDFJob({
+      inputAsset: pdfInputAsset,
+      params: extractParams
     });
 
     const extractPollingURL = await pdfServices.submit({ job: extractJob });
@@ -633,10 +632,10 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
     const AdmZip = (await import('adm-zip')).default;
     const zip = new AdmZip(outputZipPath);
     const zipEntries = zip.getEntries();
-    
+
     let structuredData = null;
     const imageAssets = {};
-    
+
     zipEntries.forEach(entry => {
       if (entry.entryName === 'structuredData.json') {
         structuredData = JSON.parse(entry.getData().toString('utf8'));
@@ -649,7 +648,7 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
         console.log(`📷 Image found: ${entry.entryName}`);
       }
     });
-    
+
     if (structuredData && Object.keys(imageAssets).length > 0) {
       structuredData.imageAssets = imageAssets;
       console.log(`✅ ${Object.keys(imageAssets).length} images extracted`);
@@ -658,7 +657,7 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
     // Get page size
     let pageWidth = 595;
     let pageHeight = 842;
-    
+
     if (structuredData?.extended_metadata?.page_info?.[0]) {
       const firstPage = structuredData.extended_metadata.page_info[0];
       if (firstPage.width && firstPage.height) {
@@ -685,11 +684,11 @@ app.post('/api/word-to-pdf-and-extract', upload.single('file'), async (req, res)
 
   } catch (err) {
     console.error('❌ Word to PDF and extract error:', err);
-    
+
     if (err instanceof SDKError || err instanceof ServiceUsageError || err instanceof ServiceApiError) {
       console.log('Adobe SDK Exception:', err);
     }
-    
+
     res.status(500).json({
       error: 'Word to PDF and extract failed',
       details: err.message
@@ -752,7 +751,7 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
     // HTML içeriğini sayfa sonlarına göre böl
     // Word'de sayfa sonları genellikle <br style="page-break-before:always"> veya benzer etiketlerle belirtilir
     const htmlContent = result.value;
-    
+
     // Sayfa sonlarını tespit et ve içeriği böl
     const pageBreakPatterns = [
       /<hr[^>]*style="[^"]*page-break[^"]*"[^>]*>/gi,
@@ -760,31 +759,31 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
       /<div[^>]*style="[^"]*page-break[^"]*"[^>]*><\/div>/gi,
       /<p[^>]*style="[^"]*page-break[^"]*"[^>]*><\/p>/gi
     ];
-    
+
     let splitHtml = htmlContent;
     const pageBreakMarker = '<!--PAGE_BREAK-->';
-    
+
     // Tüm sayfa sonu işaretlerini standart bir işarete çevir
     pageBreakPatterns.forEach(pattern => {
       splitHtml = splitHtml.replace(pattern, pageBreakMarker);
     });
-    
+
     // İçeriği sayfa sonlarına göre böl
     const pages = splitHtml.split(pageBreakMarker).filter(page => page.trim().length > 0);
-    
+
     console.log(`📄 Found ${pages.length} page(s) in Word document`);
-    
+
     // Eğer sayfa sonu işareti yoksa, içerik uzunluğuna göre otomatik böl
     if (pages.length === 1 && htmlContent.length > 5000) {
       console.log('📄 No page breaks found, splitting by content length...');
       const segments = [];
       const tempDiv = htmlContent;
       const elements = tempDiv.match(/<[^>]+>.*?<\/[^>]+>|<[^>]+\/>/g) || [];
-      
+
       let currentPage = '';
       let currentLength = 0;
       const maxPageLength = 5000; // yaklaşık bir sayfa uzunluğu
-      
+
       elements.forEach(element => {
         if (currentLength + element.length > maxPageLength && currentPage.trim()) {
           segments.push(currentPage);
@@ -794,13 +793,13 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
         currentPage += element;
         currentLength += element.length;
       });
-      
+
       if (currentPage.trim()) {
         segments.push(currentPage);
       }
-      
+
       console.log(`📄 Split into ${segments.length} page(s) by content length`);
-      
+
       res.json({
         success: true,
         pages: segments.map(html => ({ html })),
@@ -820,12 +819,12 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
 
   } catch (err) {
     console.error('❌ Word import error:', err);
-    
+
     // Clean up on error
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    
+
     res.status(500).json({
       error: 'Word import failed',
       details: err.message
