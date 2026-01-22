@@ -15,41 +15,72 @@ export default function HomePage() {
     setIsLoading(true);
     try {
       console.log(`📄 ${fileType} dosyası yükleniyor:`, file.name);
-      
+
       let parsedContent;
-      
-      // Word dosyası için: Adobe Extract API kullan (Word → PDF → Extract)
-      // Bu sayede orijinal sayfa yapısı korunur
+
+      // Word dosyası için: Collabora entegrasyonu (dosyayı sunucuya yükle ve Collabora iframe ile aç)
       if (fileType === 'Word') {
-        console.log("📄 Word dosyası Adobe Extract API ile işleniyor...");
-        const extractedData = await adobeService.wordToPdfAndExtract(file);
-        console.log("✅ Word içeriği Adobe Extract API ile çıkarıldı:", extractedData);
-        
-        // Adobe Extract → HTML sayfalarına dönüştür (PDF okuyucu gibi)
-        const pages = renderPdfToPages(extractedData);
-        console.log("✅ Word sayfaları oluşturuldu:", pages.length);
-        
-        nav("/editor", { state: { pages } });
-      } 
+        console.log("📄 Word dosyası Collabora için yüklenecek...");
+
+        // Form data oluştur
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+        const resp = await fetch(`${backendUrl}/api/upload-for-collabora`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!resp.ok) {
+          throw new Error(`Upload failed: ${resp.statusText}`);
+        }
+
+        const result = await resp.json();
+        console.log('✅ Collabora için yüklendi:', result);
+
+        // Collabora iframe URL, fileId ve access token al
+        const collaboraUrl = result.collaboraUrl;
+        const fileId = result.fileId;
+        const accessToken = result.accessToken;
+
+        // Collabora editör sayfasına yönlendir (WOPI tabanlı)
+        nav('/collabora', { state: { collaboraUrl, fileId, accessToken, fileName: file.name } });
+      }
+
       // PDF dosyası için: Dosyayı olduğu gibi kaydet ve Adobe Embed API ile göster
       else {
-        // PDF'i base64'e çevir
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const pdfBase64 = e.target.result; // data:application/pdf;base64,...
-          
-          // Adobe Embed API ile görüntülemek için PDF'i direkt kaydet
-          nav("/editor", { 
-            state: { 
-              pdfFile: pdfBase64,
-              fileName: file.name,
-              mode: 'pdf-viewer' 
-            } 
-          });
-        };
-        reader.readAsDataURL(file);
+        console.log("📄 PDF dosyası sunucuya yükleniyor...");
+
+        // Form data oluştur
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Backend'e yükle
+        // Not: .env dosyasındaki VITE_BACKEND_URL'i kullanıyoruz
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+        const response = await fetch(`${backendUrl}/api/upload-pdf`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log("✅ PDF yüklendi, URL:", result.url);
+
+        // Adobe Embed API ile görüntülemek için PDF URL'ini gönder
+        nav("/editor", {
+          state: {
+            pdfFile: result.url,
+            fileName: file.name,
+            mode: 'pdf-viewer'
+          }
+        });
       }
-      
+
     } catch (error) {
       console.error(`❌ ${fileType} yükleme hatası:`, error);
       alert(`Dosya yüklenirken hata oluştu: ${error.message}\n\nLütfen backend sunucusunun çalıştığından emin olun.`);
@@ -89,9 +120,9 @@ export default function HomePage() {
 
       <label className={`px-6 py-3 bg-green-600 text-white rounded-lg shadow cursor-pointer hover:bg-green-700 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
         Word Dosyası Yükle (.docx)
-        <input 
-          type="file" 
-          className="hidden" 
+        <input
+          type="file"
+          className="hidden"
           accept=".docx,.doc"
           onChange={(e) => handleFileUpload(e, 'Word')}
           disabled={isLoading}
@@ -100,9 +131,9 @@ export default function HomePage() {
 
       <label className={`px-6 py-3 bg-purple-600 text-white rounded-lg shadow cursor-pointer hover:bg-purple-700 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
         PDF Dosyası Yükle (.pdf)
-        <input 
-          type="file" 
-          className="hidden" 
+        <input
+          type="file"
+          className="hidden"
           accept=".pdf"
           onChange={(e) => handleFileUpload(e, 'PDF')}
           disabled={isLoading}

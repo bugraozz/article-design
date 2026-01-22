@@ -1,0 +1,723 @@
+/**
+ * WordDocumentEditor.css
+ * Profesyonel Word Document Editor'un stil dosyası
+ * OPTIMIZED for text rendering and contentEditable stability
+ */
+
+.word-document-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.word-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.word-editor-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-icon {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.current-file-info {
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+/* Toolbar */
+.word-editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.toolbar-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #5568d3;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: #48bb78;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #38a169;
+  box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: #38a169;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #2f855a;
+  box-shadow: 0 4px 12px rgba(56, 161, 105, 0.4);
+}
+
+.btn-warning {
+  background: #ecc94b;
+  color: #744210;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #daa520;
+  box-shadow: 0 4px 12px rgba(236, 201, 75, 0.4);
+}
+
+.btn-danger {
+  background: #f56565;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #e53e3e;
+  box-shadow: 0 4px 12px rgba(245, 101, 101, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  gap: 16px;
+  padding: 0 12px;
+  border-left: 1px solid #e0e0e0;
+}
+
+.stat-item {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Upload Progress */
+.upload-progress {
+  padding: 12px 16px;
+  background: #f0f4ff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #667eea;
+  font-weight: 600;
+  min-width: 40px;
+}
+
+/* Notifications */
+.notifications-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+}
+
+.notification {
+  padding: 12px 16px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.notification-success {
+  background: #c6f6d5;
+  color: #22543d;
+  border-left: 4px solid #38a169;
+}
+
+.notification-error {
+  background: #fed7d7;
+  color: #742a2a;
+  border-left: 4px solid #f56565;
+}
+
+.notification-info {
+  background: #bee3f8;
+  color: #2c5282;
+  border-left: 4px solid #3182ce;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+/* Editor Container */
+.editor-container {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background: white;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease;
+}
+
+.editor-container.dragging {
+  background: #f0f4ff;
+}
+
+.editor-container.read-only-mode .editor-content {
+  background: #f9f9f9;
+}
+
+.drop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(102, 126, 234, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  border: 2px dashed #667eea;
+  border-radius: 8px;
+}
+
+.drop-content {
+  text-align: center;
+  color: #667eea;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.drop-content p {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Editor Content */
+.editor-content {
+  min-height: 400px;
+  padding: 32px 40px;
+  outline: none;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Text rendering iyileştirmesi */
+  text-rendering: optimizeLegibility;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: normal;
+}
+
+.editor-content.read-only {
+  user-select: text;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* ============================================================================
+   BLOCK ELEMENTS
+   ============================================================================ */
+
+/* Paragraphs */
+.editor-content p {
+  display: block;
+  margin: 0.5em 0;
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.editor-content p:empty {
+  min-height: 1em;
+}
+
+/* Headings - ALL with proper block display */
+.editor-content h1 {
+  display: block;
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+.editor-content h2 {
+  display: block;
+  font-size: 1.75em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+.editor-content h3 {
+  display: block;
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+.editor-content h4 {
+  display: block;
+  font-size: 1.25em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+.editor-content h5 {
+  display: block;
+  font-size: 1.1em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+.editor-content h6 {
+  display: block;
+  font-size: 1em;
+  font-weight: 700;
+  margin: 0.5em 0;
+  line-height: 1.3;
+}
+
+/* Paragraph styles */
+.editor-content p {
+  margin: 12px 0;
+  line-height: 1.8;
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  display: block;
+}
+
+.editor-content p:empty {
+  min-height: 1.5em;
+  display: block;
+}
+
+/* List styles */
+.editor-content ul,
+.editor-content ol {
+  margin: 12px 0;
+  padding-left: 40px;
+  display: block;
+}
+
+.editor-content ul ul,
+.editor-content ol ol,
+.editor-content ul ol,
+.editor-content ol ul {
+  margin: 8px 0;
+  padding-left: 30px;
+}
+
+.editor-content li {
+  margin: 6px 0;
+  line-height: 1.8;
+  display: list-item;
+}
+
+.editor-content ul {
+  list-style-type: disc;
+}
+
+.editor-content ol {
+  list-style-type: decimal;
+}
+
+/* Inline formatting styles */
+.editor-content strong,
+.editor-content b {
+  font-weight: 700;
+  display: inline;
+}
+
+.editor-content em,
+.editor-content i {
+  font-style: italic;
+  display: inline;
+}
+
+.editor-content u {
+  text-decoration: underline;
+  display: inline;
+}
+
+.editor-content del,
+.editor-content s {
+  text-decoration: line-through;
+  display: inline;
+}
+
+.editor-content sub {
+  vertical-align: sub;
+  font-size: 0.8em;
+  display: inline;
+}
+
+.editor-content sup {
+  vertical-align: super;
+  font-size: 0.8em;
+  display: inline;
+}
+
+.editor-content span {
+  display: inline;
+}
+
+.editor-content code {
+  display: inline;
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.editor-content a {
+  color: #667eea;
+  text-decoration: underline;
+  cursor: pointer;
+  display: inline;
+}
+
+.editor-content a:hover {
+  color: #764ba2;
+}
+
+/* Table styles */
+.editor-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: table;
+}
+
+.editor-content table td,
+.editor-content table th {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+  display: table-cell;
+}
+
+.editor-content table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.editor-content table tr {
+  display: table-row;
+}
+
+.editor-content table tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+/* Link styles */
+.editor-content a {
+  color: #667eea;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: inline;
+}
+
+.editor-content a:hover {
+  color: #5568d3;
+}
+
+/* Image styles */
+.editor-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Code styles */
+.editor-content code,
+.editor-content pre {
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.editor-content pre {
+  padding: 12px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+/* Blockquote styles */
+.editor-content blockquote {
+  border-left: 4px solid #667eea;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: #666;
+  font-style: italic;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
+.empty-icon {
+  color: #ddd;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  color: #666;
+  margin: 16px 0;
+}
+
+.empty-state p {
+  color: #999;
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+.empty-hint {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #f0f4ff;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #667eea;
+}
+
+/* Footer */
+.editor-footer {
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  font-size: 12px;
+  color: #666;
+}
+
+.editor-footer p {
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .word-editor-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .word-editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .btn {
+    justify-content: center;
+    flex: 1;
+  }
+
+  .stats {
+    justify-content: center;
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 12px;
+  }
+
+  .editor-content {
+    padding: 16px 12px;
+    font-size: 14px;
+  }
+
+  .notifications-container {
+    left: 10px;
+    right: 10px;
+    max-width: none;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .word-editor-header,
+  .word-editor-toolbar,
+  .editor-footer,
+  .notifications-container {
+    display: none;
+  }
+
+  .word-document-editor {
+    background: white;
+    box-shadow: none;
+  }
+
+  .editor-content {
+    padding: 0;
+  }
+}

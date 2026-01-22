@@ -12,6 +12,7 @@ import {
   FileEdit,
   Eye,
   EyeOff,
+  Upload,
 } from "lucide-react";
 
 export default function MainToolbar({
@@ -26,6 +27,7 @@ export default function MainToolbar({
   onExportAdobeWord,
   onOpenEquationEditor,
   onOpenMathSymbolPanel,
+  onOpenWordDocumentModal,
   cleanView = false,
   onToggleCleanView,
 }) {
@@ -59,6 +61,15 @@ export default function MainToolbar({
         >
           <Grid3x3 size={18} className="text-orange-500" />
           Tablo
+        </button>
+
+        <button
+          onClick={onOpenWordDocumentModal}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          title="Word (.docx) dosyası yükle"
+        >
+          <Upload size={18} className="text-indigo-500" />
+          Word Yükle
         </button>
 
         <div className="relative">

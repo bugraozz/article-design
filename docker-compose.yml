@@ -5,14 +5,17 @@ services:
     image: collabora/code:latest
     container_name: collabora-online
     environment:
-      - domain=your-domain\.com
-      - server_name=collabora\.your-domain\.com
-      - dictionaries=en_US
+      # Allow connections from any domain for local development
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=false --o:net.proto=IPv4 --o:storage.wopi.host[0]=host.docker.internal --o:storage.wopi.host[1]=localhost --o:storage.wopi.host[2]=127.0.0.1 --o:storage.wopi.host[3]=172.* --o:storage.wopi.host[4]=192.168.* --o:storage.wopi.host[5]=10.*
+      - dictionaries=en_US,tr_TR
       - username=admin
-      - password=yourpassword
-      - extra_params=--o:ssl.enable=true --o:ssl.termination=false
+      - password=admin
+      # Allow all WOPI hosts for development
+      - aliasgroup1=http://host.docker.internal:3001,http://localhost:3001
     ports:
       - "9980:9980"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - collabora_data:/data
     restart: always

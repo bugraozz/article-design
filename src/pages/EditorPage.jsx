@@ -12,7 +12,6 @@ import PagesPanel from "../components/Editor/PagesPanel";
 import PageCanvas from "../components/Editor/PageCanvas";
 import DocumentEditor from "../components/Editor/DocumentEditor";
 import PdfViewer from "../components/Editor/PdfViewer";
-import AdobePdfViewer from "../components/Editor/AdobePdfViewer";
 import DocumentToolbar from "../components/Editor/DocumentToolbar";
 import TextPropertiesPanel from "../components/Panels/TextPropertiesPanel";
 import TablePropertiesPanel from "../components/Panels/TablePropertiesPanel";
@@ -21,13 +20,14 @@ import EquationEditorModal from "../components/Modals/EquationEditorModal";
 import TableInputModal from "../components/Modals/TableInputModal";
 import MathSymbolPanel from "../components/Panels/MathSymbolPanel";
 import EquationTemplatesPanel from "../components/Panels/EquationTemplatesPanel";
+import WordDocumentModal from "../components/Modals/WordDocumentModal";
+import WordDocumentEditor from "../components/Editor/WordDocumentEditor";
 import TableOverlay from "../overlays/TableOverlay";
 import { defaultCoverPage, defaultArticleSettings, pageTemplates } from "../types/article";
 import PageTemplateModal from "../components/Modals/PageTemplateModal";
 import AuthorInputModal from "../components/Modals/AuthorInputModal";
 import InstitutionInputModal from "../components/Modals/InstitutionInputModal";
 import ContactInputModal from "../components/Modals/ContactInputModal";
-import adobeService from "../services/adobeService";
 import { convertPagesToHTML, parseDocumentToPages } from "../utils/documentConverter";
 import { useLocation } from "react-router-dom";
 
@@ -86,6 +86,11 @@ export default function EditorPage() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showEquationTemplatesPanel, setShowEquationTemplatesPanel] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  
+  // Word Document Modal
+  const [showWordDocumentModal, setShowWordDocumentModal] = useState(false);
+  const [showWordEditor, setShowWordEditor] = useState(false);
+  const [wordDocumentContent, setWordDocumentContent] = useState(null);
   
   // Yazar ve kurum bilgileri modalları
   const [showAuthorModal, setShowAuthorModal] = useState(false);
@@ -731,86 +736,42 @@ export default function EditorPage() {
   };
 
   // ---------------------------
-  //  ADOBE PDF EXPORT - Profesyonel PDF (Adobe API kullanarak)
+  //  PDF EXPORT - jsPDF ile PDF oluştur
   // ---------------------------
   const exportAdobePDF = async () => {
     try {
-      console.log("🔴 ADOBE PDF EXPORT BAŞLIYOR");
+      console.log("🔴 PDF EXPORT BAŞLIYOR");
       
       // Sayfaları HTML'e dönüştür
       const htmlContent = convertPagesToHTML(pages, articleSettings);
       console.log("📄 HTML hazırlandı");
       
-      // Adobe API ile PDF oluştur
-      const result = await adobeService.htmlToPdf(htmlContent, 'makale.pdf');
+      // html2pdf ile PDF oluştur
+      const element = document.createElement('div');
+      element.innerHTML = htmlContent;
+      
+      const options = {
+        margin: 10,
+        filename: 'makale.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+      
+      html2pdf().set(options).from(element).save();
       console.log("✅ PDF oluşturuldu");
-      
-      // Base64'ten blob'a çevir
-      const base64Data = result.data.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
-      
-      // İndir
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.filename || `makale_${Date.now()}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
       alert("PDF başarıyla oluşturuldu!");
     } catch (error) {
-      console.error("❌ Adobe PDF export hatası:", error);
-      alert("PDF oluşturulurken hata oluştu. Lütfen Adobe API ayarlarınızı kontrol edin.");
+      console.error("❌ PDF export hatası:", error);
+      alert("PDF oluşturulurken hata oluştu.");
     }
   };
 
   // ---------------------------
-  //  ADOBE WORD EXPORT - Word belgesi (DOCX)
+  //  WORD EXPORT - Şimdilik devre dışı
   // ---------------------------
   const exportAdobeWord = async () => {
-    try {
-      console.log("🔴 ADOBE WORD EXPORT BAŞLIYOR");
-      
-      // Önce HTML'den PDF oluştur
-      const htmlContent = convertPagesToHTML(pages, articleSettings);
-      const pdfResult = await adobeService.htmlToPdf(htmlContent);
-      console.log("📄 PDF ara dosyası oluşturuldu");
-      
-      // PDF'i Word'e çevir (base64 data gönder)
-      const wordResult = await adobeService.pdfToWord(pdfResult.data);
-      console.log("✅ Word belgesi oluşturuldu");
-      
-      // Base64'ten blob'a çevir
-      const base64Data = wordResult.data.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const wordBlob = new Blob([byteArray], { 
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' 
-      });
-      
-      // İndir
-      const url = URL.createObjectURL(wordBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = wordResult.filename || `makale_${Date.now()}.docx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      alert("Word belgesi başarıyla oluşturuldu!");
-    } catch (error) {
-      console.error("❌ Adobe Word export hatası:", error);
-      alert("Word belgesi oluşturulurken hata oluştu. Lütfen Adobe API ayarlarınızı kontrol edin.");
-    }
+    alert("Word export özelliği yakında eklenecek.");
   };
 
   // ---------------------------
@@ -1616,7 +1577,7 @@ export default function EditorPage() {
               ← Geri Dön
             </button>
           </div>
-          <AdobePdfViewer pdfUrl={pdfFile} fileName={pdfFileName} />
+          <PdfViewer pdfUrl={pdfFile} fileName={pdfFileName} />
         </div>
       ) : (
         // NORMAL EDITOR MODE
@@ -1634,6 +1595,7 @@ export default function EditorPage() {
         onShowTemplateModal={() => setShowTemplateModal(true)}
         onOpenEquationEditor={handleOpenEquationEditor}
         onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+        onOpenWordDocumentModal={() => setShowWordDocumentModal(true)}
         cleanView={cleanView}
         onToggleCleanView={() => setCleanView(!cleanView)}
       />
@@ -2799,6 +2761,91 @@ export default function EditorPage() {
           onSave={handleSaveContacts}
           initialContacts={contacts}
         />
+      )}
+
+      {/* WORD DOSYA YÜKLEME MODALI */}
+      <WordDocumentModal
+        isOpen={showWordDocumentModal}
+        onClose={() => setShowWordDocumentModal(false)}
+        onDocumentLoaded={(result) => {
+          // Content'i set et
+          setWordDocumentContent(result.html);
+          // Editor'u aç
+          setShowWordEditor(true);
+          // Modal'ı kapat
+          setShowWordDocumentModal(false);
+          console.log('✅ Word belge yüklendi:', result.fileName);
+          console.log('📝 Editor açılıyor...');
+        }}
+        title="Word Dosyası Yükle"
+        showStats={true}
+        showElements={true}
+      />
+
+      {/* WORD DOCUMENT EDITOR */}
+      {showWordEditor && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.3)',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            width: '95%',
+            height: '95vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h3 style={{ margin: 0 }}>Word Belge Editörü</h3>
+              <button
+                onClick={() => setShowWordEditor(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <WordDocumentEditor
+                initialContent={wordDocumentContent}
+                fileName={wordDocumentFileName}
+                onContentChange={(html) => {
+                  setWordDocumentContent(html);
+                  console.log('📝 İçerik güncellendi');
+                }}
+                readOnly={false}
+                autoSave={true}
+                onFileLoaded={(result) => {
+                  setWordDocumentContent(result.html);
+                  console.log('📄 Yeni dosya yüklendi:', result.fileName);
+                }}
+                onError={(error) => {
+                  console.error('❌ Hata:', error);
+                  alert('Hata: ' + error.message);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
       </>
       )}

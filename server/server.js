@@ -3,6 +3,8 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import jwt from 'jsonwebtoken';
+// Lowdb removed; using Postgres via knex (db/index.js)
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -62,9 +64,72 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// import * as db from './db/index.js'; // DB removed
+const fileStore = {}; // In-memory store for file metadata
+const wopiLocks = {}; // in-memory locks (ephemeral)
+
+function generateToken() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+const WOPI_SECRET = process.env.WOPI_JWT_SECRET || generateToken();
+const WOPI_TOKEN_EXP = process.env.WOPI_TOKEN_EXP || '2h';
+
+function generateJwt(fileId) {
+  return jwt.sign({ fileId }, WOPI_SECRET, { expiresIn: WOPI_TOKEN_EXP });
+}
+
+function requireWopiAuth(req, res, next) {
+  const token = req.query.access_token || req.headers['authorization']?.replace(/^Bearer\s+/, '');
+  if (!token) return res.status(401).json({ error: 'access_token required' });
+  try {
+    const payload = jwt.verify(token, WOPI_SECRET);
+    const fileId = payload.fileId;
+    if (!fileId) return res.status(401).json({ error: 'invalid token payload' });
+    req.wopi = { token, fileId };
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'invalid or expired access_token' });
+  }
+}
+
+// Serve *public* uploads (PDF viewer etc.) from /public/uploads
+app.use('/public/uploads', express.static(path.join(__dirname, 'public_uploads')));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Adobe PDF Services Backend is running' });
+});
+
+// PDF Upload endpoint - For viewing large files
+app.post('/api/upload-pdf', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No PDF file uploaded' });
+    }
+
+    console.log('📄 PDF uploaded for viewing:', req.file.originalname);
+
+    // Move file to public_uploads so it's served at /public/uploads
+    const publicDir = path.join(__dirname, 'public_uploads');
+    if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+    const destName = `${Date.now()}-${req.file.originalname}`;
+    const destPath = path.join(publicDir, destName);
+    fs.renameSync(req.file.path, destPath);
+
+    // Use localhost for browser-facing URLs (BACKEND_URL is for Docker containers like Collabora)
+    const fileUrl = `http://localhost:${PORT}/public/uploads/${destName}`;
+
+    res.json({
+      success: true,
+      url: fileUrl,
+      filename: req.file.originalname
+    });
+
+  } catch (err) {
+    console.error('❌ PDF upload error:', err);
+    res.status(500).json({ error: 'PDF upload failed', details: err.message });
+  }
 });
 
 // HTML to PDF endpoint - Based on official Adobe example
@@ -850,4 +915,234 @@ app.listen(PORT, () => {
 ║   Using Adobe PDF Services SDK & Mammoth.js           ║
 ╚════════════════════════════════════════════════════════╝
   `);
+});
+
+// Helper to fetch Collabora editor URL from discovery
+async function getCollaboraEditorUrl(collaboraBase) {
+  try {
+    const discoveryUrl = `${collaboraBase.replace(/\/$/, '')}/hosting/discovery`;
+    const response = await fetch(discoveryUrl);
+    if (!response.ok) {
+      console.warn('⚠️ Could not fetch Collabora discovery, using fallback URL');
+      return null;
+    }
+    const xml = await response.text();
+    // Extract urlsrc from discovery XML (matches both old loleaflet and new cool.html paths)
+    const match = xml.match(/urlsrc="([^"]+)"/);
+    if (match && match[1]) {
+      // Return the base URL without query params
+      const baseUrl = match[1].split('?')[0];
+      console.log('✅ Collabora editor URL from discovery:', baseUrl);
+      return baseUrl;
+    }
+    return null;
+  } catch (err) {
+    console.warn('⚠️ Collabora discovery fetch failed:', err.message);
+    return null;
+  }
+}
+
+// Upload for Collabora endpoint
+app.post('/api/upload-for-collabora', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log('📄 Received file for Collabora (WOPI):', req.file.originalname);
+
+    // Create a stable fileId and move/rename the file to include the id
+    const fileId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const uploadsDir = path.join(__dirname, 'uploads');
+    const storedName = `${fileId}-${req.file.originalname}`;
+    const storedPath = path.join(uploadsDir, storedName);
+
+    // Move file from multer temp path
+    fs.renameSync(req.file.path, storedPath);
+
+    // Generate JWT access token
+    const accessToken = generateJwt(fileId);
+
+    // Save metadata in in-memory store
+    const stats = fs.statSync(storedPath);
+    fileStore[fileId] = {
+      id: fileId,
+      path: storedPath,
+      name: req.file.originalname,
+      size: stats.size,
+      version: Date.now().toString(),
+      created_at: new Date()
+    };
+
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+
+    // WOPI discovery URL (the Collabora client will call this WOPI host)
+    const wopiSrc = `${backendUrl}/wopi/files/${fileId}`;
+
+    // Get Collabora editor URL from discovery (handles old loleaflet and new cool.html paths)
+    const collaboraBase = process.env.COLLABORA_URL || 'http://localhost:9980';
+    let editorUrl = await getCollaboraEditorUrl(collaboraBase);
+
+    // Fallback to new cool.html path (newer Collabora versions)
+    if (!editorUrl) {
+      // Try common paths in order of preference (newest to oldest)
+      editorUrl = `${collaboraBase.replace(/\/$/, '')}/browser/dist/cool.html`;
+    }
+
+    const collaboraIframe = `${editorUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}&access_token=${encodeURIComponent(accessToken)}`;
+
+    console.log('📝 Collabora iframe URL:', collaboraIframe);
+
+    res.json({
+      success: true,
+      fileId,
+      collaboraUrl: collaboraIframe,
+      accessToken,
+      filename: req.file.originalname
+    });
+
+  } catch (err) {
+    console.error('❌ upload-for-collabora error:', err);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: 'upload-for-collabora failed', details: err.message });
+  }
+});
+
+// WOPI endpoints (minimal implementation for Collabora CODE)
+
+// CheckFileInfo
+app.get('/wopi/files/:id', requireWopiAuth, async (req, res) => {
+  try {
+    const { fileId } = req.wopi;
+
+    const file = fileStore[fileId];
+    if (!file) return res.status(404).json({ error: 'file not found' });
+
+    res.json({
+      BaseFileName: file.name,
+      Size: file.size,
+      OwnerId: 'user',
+      UserId: 'user',
+      Version: file.version,
+      SupportsLocks: true,
+      UserCanWrite: true,
+      SupportsUpdate: true,
+      UserFriendlyName: 'ArticleDesign WOPI Host'
+    });
+  } catch (err) {
+    console.error('❌ WOPI CheckFileInfo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Download contents
+app.get('/wopi/files/:id/contents', requireWopiAuth, async (req, res) => {
+  try {
+    const { fileId } = req.wopi;
+
+    const file = fileStore[fileId];
+    if (!file) return res.status(404).end();
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    const stream = fs.createReadStream(file.path);
+    stream.pipe(res);
+  } catch (err) {
+    console.error('❌ WOPI contents GET error:', err);
+    res.status(500).end();
+  }
+});
+
+// Update contents (PUT)
+app.put('/wopi/files/:id/contents', requireWopiAuth, (req, res) => {
+  try {
+    const { fileId } = req.wopi;
+
+    const file = fileStore[fileId];
+    if (!file) return res.status(404).end();
+
+    // Simple lock check
+    const incomingLock = req.headers['x-wopi-lock'];
+    const currentLock = wopiLocks[fileId];
+    if (currentLock && incomingLock !== currentLock) {
+      res.status(409).setHeader('X-WOPI-Lock', currentLock).end();
+      return;
+    }
+
+    // Write request body to file (stream)
+    const tempPath = `${file.path}.uploading`;
+    const writeStream = fs.createWriteStream(tempPath);
+    req.pipe(writeStream);
+    writeStream.on('finish', async () => {
+      fs.renameSync(tempPath, file.path);
+      // update metadata
+      const stats = fs.statSync(file.path);
+      file.size = stats.size;
+      file.version = Date.now().toString();
+      file.updated_at = new Date();
+
+      fileStore[fileId] = file;
+
+      res.status(200).end();
+    });
+    writeStream.on('error', (err) => {
+      console.error('❌ Write error:', err);
+      res.status(500).end();
+    });
+  } catch (err) {
+    console.error('❌ WOPI contents PUT error:', err);
+    res.status(500).end();
+  }
+});
+
+// Handle LOCK / UNLOCK / REFRESH via X-WOPI-Override header
+app.post('/wopi/files/:id', requireWopiAuth, express.text({ type: '*/*' }), (req, res) => {
+  try {
+    const override = req.headers['x-wopi-override']?.toUpperCase();
+    const lock = req.headers['x-wopi-lock'];
+    const { fileId } = req.wopi;
+
+    if (!override) return res.status(400).json({ error: 'X-WOPI-Override required' });
+
+    if (override === 'LOCK') {
+      const current = wopiLocks[fileId];
+      if (current && current !== lock) {
+        res.status(409).setHeader('X-WOPI-Lock', current).end();
+        return;
+      }
+      wopiLocks[fileId] = lock || generateToken();
+      res.setHeader('X-WOPI-Lock', wopiLocks[fileId]);
+      return res.status(200).end();
+    }
+
+    if (override === 'UNLOCK') {
+      const current = wopiLocks[fileId];
+      if (!current) return res.status(409).end();
+      if (lock !== current) {
+        res.status(409).setHeader('X-WOPI-Lock', current).end();
+        return;
+      }
+      delete wopiLocks[fileId];
+      return res.status(200).end();
+    }
+
+    if (override === 'REFRESH_LOCK') {
+      const current = wopiLocks[fileId];
+      if (!current || lock !== current) {
+        res.status(409).setHeader('X-WOPI-Lock', current || '').end();
+        return;
+      }
+      // refresh by re-setting same lock
+      wopiLocks[fileId] = lock;
+      res.setHeader('X-WOPI-Lock', lock);
+      return res.status(200).end();
+    }
+
+    res.status(400).json({ error: 'unsupported override' });
+
+  } catch (err) {
+    console.error('❌ WOPI LOCK error:', err);
+    res.status(500).end();
+  }
 });

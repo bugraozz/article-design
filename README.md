@@ -45,7 +45,16 @@ Modern, profesyonel makale ve doküman tasarım editörü. Word, InDesign ve LaT
 - **Sembol Paneli** - 50+ matematik sembolü
 - **Live Preview** - Anlık önizleme
 
-### 📝 Zengin Metin Editörü (TipTap)
+### � Word Dosyası Yükleme & Görüntüleme (YENİ!)
+- **DOCX Yükleme** - Drag & Drop ve file input desteği
+- **HTML Dönüştürme** - Mammoth.js ile profesyonel dönüştürme
+- **İstatistikler** - Kelime, karakter, okuma süresi
+- **Belge Analizi** - Tablolar, resimler, bağlantılar
+- **Profesyonel Editor** - ContentEditable ile in-place düzenleme
+- **Auto-Save** - Otomatik LocalStorage kaydı
+- **Export Options** - HTML ve diğer formatlar
+
+### �📝 Zengin Metin Editörü (TipTap)
 - **Temel Formatlama** - Bold, italic, underline, strikethrough
 - **Başlıklar** - H1, H2, H3 desteği
 - **Hizalama** - Sol, orta, sağ, justify
@@ -356,21 +365,16 @@ MIT License - Detaylar için LICENSE dosyasına bakın
 - [KaTeX Documentation](https://katex.org/)
 - [MathJax Documentation](https://www.mathjax.org/)
 - [MathML Specification](https://www.w3.org/Math/)
+- [Mammoth.js](https://github.com/mwilson/mammoth.js) - DOCX dönüştürme
 
 ## 🎯 Özellikler Roadmap
 
 - ✅ LaTeX/MathML/OMML support
 - ✅ Character-by-character editing
 - ✅ Professional rendering
+- ✅ Word (.docx) yükleme ve düzenleme
 - ⏳ Advanced LaTeX macros
 - ⏳ Real-time collaboration
 - ⏳ Export to PDF/SVG
-
-
-
-**Status:** ✅ Production Ready  
-**Version:** 1.0.0  
-
-
 
 
