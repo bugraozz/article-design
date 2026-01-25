@@ -1,15 +1,16 @@
 // src/components/Editor/PdfViewer.jsx
-// SimplePdfViewer - PDF.js tabanlı hafif PDF görüntüleyicisi
-import SimplePdfViewer from './SimplePdfViewer';
+// ProfessionalPdfViewerFixed - Düzeltilmiş profesyonel PDF görüntüleyici
+// Fixes: Zoom kayması, seçim sorunu, profesyonel vurgulama
+import ProfessionalPdfViewerFixed from './ProfessionalPdfViewerFixed';
 
 // Eğer htmlContent HTML string ise, eski davranışı koru
-// Eğer pdfUrl base64 PDF ise, SimplePdfViewer'ı kullan
+// Eğer pdfUrl base64 PDF ise, ProfessionalPdfViewerFixed'i kullan
 export default function PdfViewer({ htmlContent, pdfUrl, fileName = 'document.pdf' }) {
   console.log('📄 PdfViewer rendering');
 
-  // SimplePdfViewer'ı kullan (pdfUrl varsa)
+  // ProfessionalPdfViewerFixed'i kullan (pdfUrl varsa) - Tüm hatalar düzeltildi
   if (pdfUrl) {
-    return <SimplePdfViewer pdfUrl={pdfUrl} fileName={fileName} />;
+    return <ProfessionalPdfViewerFixed pdfUrl={pdfUrl} fileName={fileName} />;
   }
 
   // HTML content'i göster (eski davranış)
