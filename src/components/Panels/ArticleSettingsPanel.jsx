@@ -1,5 +1,18 @@
 import { useState } from "react";
 
+const WORD_SAFE_FONTS = [
+  "Calibri",
+  "Times New Roman",
+  "Arial",
+  "Cambria",
+  "Georgia",
+  "Garamond",
+  "Helvetica",
+  "Trebuchet MS",
+  "Verdana",
+  "Courier New",
+];
+
 export default function ArticleSettingsPanel({ settings, onSettingsChange }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -31,6 +44,20 @@ export default function ArticleSettingsPanel({ settings, onSettingsChange }) {
               Başlık
             </h3>
             <div>
+              <label className="block text-xs text-gray-600 mb-1 font-medium">Yazı Tipi</label>
+              <select
+                value={settings.titleFontFamily}
+                onChange={(e) => handleChange("titleFontFamily", e.target.value)}
+                className="w-full border border-gray-300 bg-white text-gray-800 rounded px-3 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none"
+              >
+                {WORD_SAFE_FONTS.map((font) => (
+                  <option key={font} value={font}>
+                    {font}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-xs text-gray-600 mb-1 font-medium">Renk</label>
               <input
                 type="color"
@@ -57,6 +84,20 @@ export default function ArticleSettingsPanel({ settings, onSettingsChange }) {
             <h3 className="font-semibold mb-2 text-gray-700 text-xs uppercase tracking-wide">
               Metin Ayarları
             </h3>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1 font-medium">Yazı Tipi</label>
+              <select
+                value={settings.bodyFontFamily}
+                onChange={(e) => handleChange("bodyFontFamily", e.target.value)}
+                className="w-full border border-gray-300 bg-white text-gray-800 rounded px-3 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none"
+              >
+                {WORD_SAFE_FONTS.map((font) => (
+                  <option key={font} value={font}>
+                    {font}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-xs text-gray-600 mb-1 font-medium">Metin Rengi</label>
               <input

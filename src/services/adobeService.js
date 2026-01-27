@@ -191,7 +191,8 @@ class AdobeService {
    * Helper: Convert base64 to Blob
    */
   base64ToBlob(base64, mimeType) {
-    const byteCharacters = atob(base64);
+    const normalizedBase64 = this.normalizeBase64(base64);
+    const byteCharacters = atob(normalizedBase64);
     const byteArrays = [];
 
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
@@ -206,6 +207,27 @@ class AdobeService {
 
     return new Blob(byteArrays, { type: mimeType });
   }
+
+  normalizeBase64(base64) {
+    if (!base64) return '';
+
+    let cleaned = base64;
+
+    if (cleaned.startsWith('data:')) {
+      const commaIndex = cleaned.indexOf(',');
+      cleaned = commaIndex >= 0 ? cleaned.slice(commaIndex + 1) : cleaned;
+    }
+
+    cleaned = cleaned.replace(/\s/g, '');
+    cleaned = cleaned.replace(/-/g, '+').replace(/_/g, '/');
+
+    const padding = cleaned.length % 4;
+    if (padding > 0) {
+      cleaned += '='.repeat(4 - padding);
+    }
+
+    return cleaned;
+  }
 }
 
-export default new AdobeService();
+export default AdobeService;

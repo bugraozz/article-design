@@ -29,6 +29,7 @@ import AuthorInputModal from "../components/Modals/AuthorInputModal";
 import InstitutionInputModal from "../components/Modals/InstitutionInputModal";
 import ContactInputModal from "../components/Modals/ContactInputModal";
 import { convertPagesToHTML, parseDocumentToPages } from "../utils/documentConverter";
+import AdobeService from "../services/adobeService";
 import { useLocation } from "react-router-dom";
 
 export default function EditorPage() {
@@ -736,42 +737,67 @@ export default function EditorPage() {
   };
 
   // ---------------------------
-  //  PDF EXPORT - jsPDF ile PDF oluştur
+  //  ADOBE PDF EXPORT - HTML -> PDF (vektörel)
   // ---------------------------
   const exportAdobePDF = async () => {
     try {
-      console.log("🔴 PDF EXPORT BAŞLIYOR");
-      
-      // Sayfaları HTML'e dönüştür
+      console.log("🔴 ADOBE PDF EXPORT BAŞLIYOR");
+      const adobeService = new AdobeService();
+      await adobeService.checkHealth();
+
       const htmlContent = convertPagesToHTML(pages, articleSettings);
       console.log("📄 HTML hazırlandı");
-      
-      // html2pdf ile PDF oluştur
-      const element = document.createElement('div');
-      element.innerHTML = htmlContent;
-      
-      const options = {
-        margin: 10,
-        filename: 'makale.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-      };
-      
-      html2pdf().set(options).from(element).save();
-      console.log("✅ PDF oluşturuldu");
+
+      const { data, filename } = await adobeService.htmlToPdf(htmlContent, "makale.pdf");
+      const pdfBlob = adobeService.base64ToBlob(data, "application/pdf");
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "makale.pdf";
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      console.log("✅ Adobe PDF oluşturuldu");
       alert("PDF başarıyla oluşturuldu!");
     } catch (error) {
-      console.error("❌ PDF export hatası:", error);
-      alert("PDF oluşturulurken hata oluştu.");
+      console.error("❌ Adobe PDF export hatası:", error);
+      alert("Adobe PDF oluşturulurken hata oluştu: " + error.message);
     }
   };
 
   // ---------------------------
-  //  WORD EXPORT - Şimdilik devre dışı
+  //  ADOBE WORD EXPORT - HTML -> PDF -> Word
   // ---------------------------
   const exportAdobeWord = async () => {
-    alert("Word export özelliği yakında eklenecek.");
+    try {
+      console.log("📝 ADOBE WORD EXPORT BAŞLIYOR");
+      const adobeService = new AdobeService();
+      await adobeService.checkHealth();
+
+      const htmlContent = convertPagesToHTML(pages, articleSettings);
+      console.log("📄 HTML hazırlandı");
+
+      const { data: pdfData } = await adobeService.htmlToPdf(htmlContent, "makale.pdf");
+      const { data: wordData, filename } = await adobeService.pdfToWord(pdfData, "makale.docx");
+
+      const wordBlob = adobeService.base64ToBlob(wordData, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      const url = window.URL.createObjectURL(wordBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename || "makale.docx";
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      console.log("✅ Word belgesi oluşturuldu");
+      alert("Word belgesi başarıyla oluşturuldu!");
+    } catch (error) {
+      console.error("❌ Word export hatası:", error);
+      alert("Word export hatası: " + error.message);
+    }
   };
 
   // ---------------------------

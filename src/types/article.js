@@ -3,13 +3,13 @@
 export const defaultArticleSettings = {
   titleColor: "#1f2937", // Başlık rengi
   titleFontSize: 24,
-  titleFontFamily: "Arial, sans-serif",
+  titleFontFamily: "Calibri",
   
   subtitleColor: "#4b5563",
   subtitleFontSize: 18,
   
   bodyFontSize: 14,
-  bodyFontFamily: "Arial, sans-serif",
+  bodyFontFamily: "Calibri",
   bodyLineHeight: 1.6,
   bodyColor: "#374151",
   

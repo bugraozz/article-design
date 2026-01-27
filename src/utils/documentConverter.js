@@ -6,6 +6,16 @@
  * Absolute positioning ile overlay yapısını koruyarak
  */
 export function convertPagesToHTML(pages, articleSettings) {
+  const bodyFontSizePx = articleSettings?.bodyFontSize || 14;
+  const titleFontSizePx = articleSettings?.titleFontSize || 24;
+  const pxToPt = (value) => Number(value).toFixed(2);
+  const bodyFontSizePt = pxToPt(bodyFontSizePx);
+  const titleFontSizePt = pxToPt(titleFontSizePx);
+  const bodyFontFamily = articleSettings?.bodyFontFamily || "Calibri";
+  const titleFontFamily = articleSettings?.titleFontFamily || bodyFontFamily;
+  const quotedBodyFontFamily = `"${bodyFontFamily}"`;
+  const quotedTitleFontFamily = `"${titleFontFamily}"`;
+
   let fullHTML = `
 <!DOCTYPE html>
 <html lang="tr">
@@ -21,11 +31,21 @@ export function convertPagesToHTML(pages, articleSettings) {
     }
     
     body {
-      font-family: ${articleSettings?.bodyFontFamily || 'Arial, sans-serif'};
+      font-family: ${quotedBodyFontFamily};
+      font-size: ${bodyFontSizePt}pt;
+      line-height: ${articleSettings?.bodyLineHeight || 1.6};
       background: white;
-      color: #000;
+      color: ${articleSettings?.bodyColor || '#000'};
       margin: 0;
       padding: 0;
+    }
+
+    .document-content,
+    .document-content * {
+      font-family: ${quotedBodyFontFamily};
+      color: ${articleSettings?.bodyColor || '#000'};
+      line-height: ${articleSettings?.bodyLineHeight || 1.6};
+      font-size: ${bodyFontSizePt}pt;
     }
     
     .page {
@@ -62,11 +82,15 @@ export function convertPagesToHTML(pages, articleSettings) {
     h1, h2, h3, h4, h5, h6 {
       margin: 0.5em 0;
       font-weight: bold;
+      font-family: ${quotedTitleFontFamily};
+      color: ${articleSettings?.titleColor || articleSettings?.bodyColor || '#000'};
+      font-size: ${titleFontSizePt}pt;
     }
     
     p {
       margin: 0.5em 0;
-      line-height: 1.6;
+      line-height: ${articleSettings?.bodyLineHeight || 1.6};
+      color: ${articleSettings?.bodyColor || '#000'};
     }
     
     table {
@@ -100,7 +124,11 @@ export function convertPagesToHTML(pages, articleSettings) {
 
     // Belge modu - TipTap içeriği
     if (page.mode === 'document' && page.documentContent) {
-      fullHTML += page.documentContent;
+      fullHTML += `
+    <div class="document-content">
+      ${page.documentContent}
+    </div>
+      `;
     }
     
     // Serbest mod - overlaylar
@@ -119,7 +147,7 @@ export function convertPagesToHTML(pages, articleSettings) {
       page.overlays?.forEach(overlay => {
         if (overlay.type === 'text') {
           fullHTML += `
-    <div class="overlay" style="left: ${overlay.x}px; top: ${overlay.y}px; width: ${overlay.width}px; height: ${overlay.height}px; font-size: ${overlay.fontSize || 14}px; color: ${overlay.color || '#000'}; line-height: ${overlay.lineHeight || 1.4}; transform: rotate(${overlay.rotate || 0}deg);">
+    <div class="overlay" style="left: ${overlay.x}px; top: ${overlay.y}px; width: ${overlay.width}px; height: ${overlay.height}px; font-size: ${pxToPt(overlay.fontSize || bodyFontSizePx)}pt; color: ${overlay.color || '#000'}; line-height: ${overlay.lineHeight || 1.4}; font-family: ${quotedBodyFontFamily}; transform: rotate(${overlay.rotate || 0}deg);">
       ${overlay.html}
     </div>
 `;
