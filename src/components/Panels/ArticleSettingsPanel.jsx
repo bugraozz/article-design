@@ -2,15 +2,9 @@ import { useState } from "react";
 
 const WORD_SAFE_FONTS = [
   "Calibri",
-  "Times New Roman",
   "Arial",
+  "Times New Roman",
   "Cambria",
-  "Georgia",
-  "Garamond",
-  "Helvetica",
-  "Trebuchet MS",
-  "Verdana",
-  "Courier New",
 ];
 
 export default function ArticleSettingsPanel({ settings, onSettingsChange }) {

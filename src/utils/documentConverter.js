@@ -8,13 +8,39 @@
 export function convertPagesToHTML(pages, articleSettings) {
   const bodyFontSizePx = articleSettings?.bodyFontSize || 14;
   const titleFontSizePx = articleSettings?.titleFontSize || 24;
-  const pxToPt = (value) => Number(value).toFixed(2);
-  const bodyFontSizePt = pxToPt(bodyFontSizePx);
-  const titleFontSizePt = pxToPt(titleFontSizePx);
+  const BODY_WORD_COMPENSATION = 1.09;
+  const TITLE_WORD_COMPENSATION = 1.07;
+  const pxToPtBody = (value) => (Number(value) * BODY_WORD_COMPENSATION).toFixed(2);
+  const pxToPtTitle = (value) => (Number(value) * TITLE_WORD_COMPENSATION).toFixed(2);
+  const bodyFontSizePt = pxToPtBody(bodyFontSizePx);
+  const titleFontSizePt = pxToPtTitle(titleFontSizePx);
+  const pxToPtOverlay = (value) => pxToPtBody(value);
+
   const bodyFontFamily = articleSettings?.bodyFontFamily || "Calibri";
   const titleFontFamily = articleSettings?.titleFontFamily || bodyFontFamily;
-  const quotedBodyFontFamily = `"${bodyFontFamily}"`;
-  const quotedTitleFontFamily = `"${titleFontFamily}"`;
+
+  const buildFontFamilyCss = (primary, fallbacks) => {
+    const families = [primary, ...(fallbacks || [])].filter(Boolean);
+    return families
+      .map((f) => {
+        if (f.includes(" ")) return `\"${f}\"`;
+        return f;
+      })
+      .join(", ");
+  };
+
+  const bodyFontFamilyCss = buildFontFamilyCss(bodyFontFamily, [
+    "Calibri",
+    "Arial",
+    "Times New Roman",
+    "sans-serif",
+  ]);
+  const titleFontFamilyCss = buildFontFamilyCss(titleFontFamily, [
+    "Times New Roman",
+    "Calibri",
+    "Arial",
+    "serif",
+  ]);
 
   let fullHTML = `
 <!DOCTYPE html>
@@ -31,7 +57,7 @@ export function convertPagesToHTML(pages, articleSettings) {
     }
     
     body {
-      font-family: ${quotedBodyFontFamily};
+      font-family: ${bodyFontFamilyCss};
       font-size: ${bodyFontSizePt}pt;
       line-height: ${articleSettings?.bodyLineHeight || 1.6};
       background: white;
@@ -42,7 +68,7 @@ export function convertPagesToHTML(pages, articleSettings) {
 
     .document-content,
     .document-content * {
-      font-family: ${quotedBodyFontFamily};
+      font-family: ${bodyFontFamilyCss};
       color: ${articleSettings?.bodyColor || '#000'};
       line-height: ${articleSettings?.bodyLineHeight || 1.6};
       font-size: ${bodyFontSizePt}pt;
@@ -82,7 +108,7 @@ export function convertPagesToHTML(pages, articleSettings) {
     h1, h2, h3, h4, h5, h6 {
       margin: 0.5em 0;
       font-weight: bold;
-      font-family: ${quotedTitleFontFamily};
+      font-family: ${titleFontFamilyCss};
       color: ${articleSettings?.titleColor || articleSettings?.bodyColor || '#000'};
       font-size: ${titleFontSizePt}pt;
     }
@@ -147,7 +173,7 @@ export function convertPagesToHTML(pages, articleSettings) {
       page.overlays?.forEach(overlay => {
         if (overlay.type === 'text') {
           fullHTML += `
-    <div class="overlay" style="left: ${overlay.x}px; top: ${overlay.y}px; width: ${overlay.width}px; height: ${overlay.height}px; font-size: ${pxToPt(overlay.fontSize || bodyFontSizePx)}pt; color: ${overlay.color || '#000'}; line-height: ${overlay.lineHeight || 1.4}; font-family: ${quotedBodyFontFamily}; transform: rotate(${overlay.rotate || 0}deg);">
+    <div class="overlay" style="left: ${overlay.x}px; top: ${overlay.y}px; width: ${overlay.width}px; height: ${overlay.height}px; font-size: ${pxToPtOverlay(overlay.fontSize || bodyFontSizePx)}pt; color: ${overlay.color || '#000'}; line-height: ${overlay.lineHeight || 1.4}; font-family: ${bodyFontFamilyCss}; transform: rotate(${overlay.rotate || 0}deg);">
       ${overlay.html}
     </div>
 `;
