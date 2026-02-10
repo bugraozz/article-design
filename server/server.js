@@ -897,6 +897,110 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
   }
 });
 
+// ===== PROJE KAYDET / GERİ YÜKLE =====
+
+// Proje kayıt dizini
+const SAVED_PROJECTS_DIR = path.join(__dirname, 'saved_projects');
+if (!fs.existsSync(SAVED_PROJECTS_DIR)) {
+  fs.mkdirSync(SAVED_PROJECTS_DIR, { recursive: true });
+  console.log('📁 saved_projects dizini oluşturuldu');
+}
+
+// Benzersiz 8 haneli alfanümerik kod üret
+function generateProjectCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Karışıklığı önlemek için 0/O, 1/I/L çıkarıldı
+  let code = '';
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// Proje Kaydet
+app.post('/api/projects/save', async (req, res) => {
+  try {
+    const { pages, articleSettings, authors, institutions, contacts, projectName } = req.body;
+
+    if (!pages || !Array.isArray(pages) || pages.length === 0) {
+      return res.status(400).json({ error: 'Proje verisi (pages) gereklidir' });
+    }
+
+    // Benzersiz kod üret (çakışma kontrolü)
+    let code;
+    let attempts = 0;
+    do {
+      code = generateProjectCode();
+      attempts++;
+    } while (fs.existsSync(path.join(SAVED_PROJECTS_DIR, `${code}.json`)) && attempts < 100);
+
+    if (attempts >= 100) {
+      return res.status(500).json({ error: 'Benzersiz kod üretilemedi, lütfen tekrar deneyin' });
+    }
+
+    // Proje verisini oluştur
+    const projectData = {
+      code,
+      projectName: projectName || 'İsimsiz Proje',
+      pages,
+      articleSettings: articleSettings || {},
+      authors: authors || [],
+      institutions: institutions || [],
+      contacts: contacts || [],
+      savedAt: new Date().toISOString(),
+      version: '1.0'
+    };
+
+    // JSON dosyasına kaydet
+    const filePath = path.join(SAVED_PROJECTS_DIR, `${code}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(projectData, null, 2), 'utf8');
+
+    const fileSizeKB = (fs.statSync(filePath).size / 1024).toFixed(1);
+    console.log(`💾 Proje kaydedildi: ${code} (${fileSizeKB} KB, ${pages.length} sayfa)`);
+
+    res.json({
+      success: true,
+      code,
+      message: `Proje başarıyla kaydedildi! Kod: ${code}`,
+      size: `${fileSizeKB} KB`,
+      pageCount: pages.length
+    });
+
+  } catch (err) {
+    console.error('❌ Proje kaydetme hatası:', err);
+    res.status(500).json({ error: 'Proje kaydedilemedi', details: err.message });
+  }
+});
+
+// Proje Yükle
+app.get('/api/projects/:code', async (req, res) => {
+  try {
+    const code = req.params.code.toUpperCase().trim();
+
+    // Kod formatı kontrolü
+    if (!/^[A-Z0-9]{8}$/.test(code)) {
+      return res.status(400).json({ error: 'Geçersiz proje kodu formatı. Kod 8 haneli alfanümerik olmalıdır.' });
+    }
+
+    const filePath = path.join(SAVED_PROJECTS_DIR, `${code}.json`);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Bu kodla kayıtlı bir proje bulunamadı.' });
+    }
+
+    const projectData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    console.log(`📂 Proje yüklendi: ${code} (${projectData.pages?.length || 0} sayfa)`);
+
+    res.json({
+      success: true,
+      data: projectData
+    });
+
+  } catch (err) {
+    console.error('❌ Proje yükleme hatası:', err);
+    res.status(500).json({ error: 'Proje yüklenemedi', details: err.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`
@@ -911,6 +1015,8 @@ app.listen(PORT, () => {
 ║   POST /api/extract-document         (PDF Import)      ║
 ║   POST /api/word-to-pdf-and-extract  (Word Import)     ║
 ║   POST /api/import-word              (Word HTML)       ║
+║   POST /api/projects/save            (Proje Kaydet)    ║
+║   GET  /api/projects/:code           (Proje Yükle)     ║
 ║                                                        ║
 ║   Using Adobe PDF Services SDK & Mammoth.js           ║
 ╚════════════════════════════════════════════════════════╝

@@ -60,7 +60,25 @@ export default function DocumentEditor({
       Highlight.configure({
         multicolor: true,
       }),
-      Table.configure({
+      Table.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            style: {
+              default: null,
+              parseHTML: element => element.getAttribute('style'),
+              renderHTML: attributes => {
+                if (!attributes.style) {
+                  return {};
+                }
+                return {
+                  style: attributes.style,
+                };
+              },
+            },
+          };
+        },
+      }).configure({
         resizable: true,
         handleWidth: 5,
         cellMinWidth: 50,
@@ -71,7 +89,25 @@ export default function DocumentEditor({
         },
       }),
       TableRow,
-      TableHeader.configure({
+      TableHeader.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            style: {
+              default: null,
+              parseHTML: element => element.getAttribute('style'),
+              renderHTML: attributes => {
+                if (!attributes.style) {
+                  return {};
+                }
+                return {
+                  style: attributes.style,
+                };
+              },
+            },
+          };
+        },
+      }).configure({
         HTMLAttributes: {
           class: "tiptap-table-header",
         },
@@ -80,27 +116,15 @@ export default function DocumentEditor({
         addAttributes() {
           return {
             ...this.parent?.(),
-            backgroundColor: {
+            style: {
               default: null,
-              parseHTML: element => element.style.backgroundColor || null,
+              parseHTML: element => element.getAttribute('style'),
               renderHTML: attributes => {
-                if (!attributes.backgroundColor) {
+                if (!attributes.style) {
                   return {};
                 }
                 return {
-                  style: `background-color: ${attributes.backgroundColor}`,
-                };
-              },
-            },
-            color: {
-              default: null,
-              parseHTML: element => element.style.color || null,
-              renderHTML: attributes => {
-                if (!attributes.color) {
-                  return {};
-                }
-                return {
-                  style: `color: ${attributes.color}`,
+                  style: attributes.style,
                 };
               },
             },

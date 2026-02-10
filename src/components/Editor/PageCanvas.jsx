@@ -17,8 +17,8 @@ export default function PageCanvas({
   onImageChange,
   onTableChange,
   onRightClick,
-  onOverlayClick, // Yeni prop
-  onCellEdit, // Yeni callback
+  onOverlayClick,
+  onCellEdit,
   inlineEditingId,
   setInlineEditingId,
   onEditorCreate,
@@ -396,6 +396,7 @@ export default function PageCanvas({
               data={table.data}
               mergedCells={table.mergedCells || {}}
               cellStyles={table.cellStyles || {}}
+              tableStyle={table.tableStyle || {}}
               headerRow={table.headerRow}
               isActive={table.id === activeTable}
               onClick={() => {
@@ -415,7 +416,6 @@ export default function PageCanvas({
                 onTableChange?.(id, { mergedCells });
               }}
               onCellEdit={(tableId, row, col) => {
-                // Parent'a hücre düzenleme bilgisini gönder
                 onCellEdit?.(tableId, row, col);
               }}
               showGrid={showGrid}
@@ -424,6 +424,7 @@ export default function PageCanvas({
               snapEnabled={snapEnabled}
             />
           ))}
+
         </div>
       </div>
       </div>

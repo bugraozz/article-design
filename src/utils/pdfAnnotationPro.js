@@ -33,7 +33,7 @@ export class AnnotationManagerPro {
       timestamp: new Date().toISOString(),
       ...annotation,
     };
-    
+
     this.annotations.push(newAnnotation);
     this.saveToHistory();
     this.notifyListeners();
@@ -85,7 +85,7 @@ export class AnnotationManagerPro {
     this.history = this.history.slice(0, this.historyIndex + 1);
     this.history.push(JSON.parse(JSON.stringify(this.annotations)));
     this.historyIndex++;
-    
+
     if (this.history.length > 50) {
       this.history.shift();
       this.historyIndex--;
@@ -195,13 +195,22 @@ export const ANNOTATION_TOOLS = {
   ERASER: 'eraser',
 };
 
+// Microsoft Word Vurgulama Renkleri
 export const PRESET_COLORS = [
-  { name: 'Yellow', value: { r: 1, g: 1, b: 0 }, hex: '#FFFF00' },
-  { name: 'Green', value: { r: 0, g: 1, b: 0 }, hex: '#00FF00' },
-  { name: 'Blue', value: { r: 0, g: 0.5, b: 1 }, hex: '#0080FF' },
-  { name: 'Red', value: { r: 1, g: 0, b: 0 }, hex: '#FF0000' },
-  { name: 'Orange', value: { r: 1, g: 0.5, b: 0 }, hex: '#FF8000' },
-  { name: 'Pink', value: { r: 1, g: 0.4, b: 0.7 }, hex: '#FF66B2' },
-  { name: 'Purple', value: { r: 0.5, g: 0, b: 1 }, hex: '#8000FF' },
-  { name: 'Cyan', value: { r: 0, g: 1, b: 1 }, hex: '#00FFFF' },
+  { name: 'Sarı', value: { r: 1, g: 1, b: 0 }, hex: '#FFFF00' },
+  { name: 'Parlak Yeşil', value: { r: 0, g: 1, b: 0 }, hex: '#00FF00' },
+  { name: 'Turkuaz', value: { r: 0, g: 1, b: 1 }, hex: '#00FFFF' },
+  { name: 'Pembe', value: { r: 1, g: 0, b: 1 }, hex: '#FF00FF' },
+  { name: 'Mavi', value: { r: 0, g: 0, b: 1 }, hex: '#0000FF' },
+  { name: 'Kırmızı', value: { r: 1, g: 0, b: 0 }, hex: '#FF0000' },
+  { name: 'Koyu Mavi', value: { r: 0, g: 0, b: 0.5 }, hex: '#000080' },
+  { name: 'Deniz Mavisi', value: { r: 0, g: 0.5, b: 0.5 }, hex: '#008080' },
+  { name: 'Yeşil', value: { r: 0, g: 0.5, b: 0 }, hex: '#008000' },
+  { name: 'Mor', value: { r: 0.5, g: 0, b: 0.5 }, hex: '#800080' },
+  { name: 'Koyu Kırmızı', value: { r: 0.5, g: 0, b: 0 }, hex: '#800000' },
+  { name: 'Koyu Sarı', value: { r: 0.5, g: 0.5, b: 0 }, hex: '#808000' },
+  { name: 'Gri %50', value: { r: 0.5, g: 0.5, b: 0.5 }, hex: '#808080' },
+  { name: 'Gri %25', value: { r: 0.75, g: 0.75, b: 0.75 }, hex: '#C0C0C0' },
+  { name: 'Siyah', value: { r: 0, g: 0, b: 0 }, hex: '#000000' },
+  { name: 'Beyaz', value: { r: 1, g: 1, b: 1 }, hex: '#FFFFFF' },
 ];

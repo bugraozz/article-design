@@ -1,5 +1,5 @@
 // src/pages/EditorPage.jsx
-import { useState, useRef,useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -17,7 +17,7 @@ import TextPropertiesPanel from "../components/Panels/TextPropertiesPanel";
 import TablePropertiesPanel from "../components/Panels/TablePropertiesPanel";
 import ArticleSettingsPanel from "../components/Panels/ArticleSettingsPanel";
 import EquationEditorModal from "../components/Modals/EquationEditorModal";
-import TableInputModal from "../components/Modals/TableInputModal";
+import TableStyleModal from "../components/Modals/TableStyleModal";
 import MathSymbolPanel from "../components/Panels/MathSymbolPanel";
 import EquationTemplatesPanel from "../components/Panels/EquationTemplatesPanel";
 import WordDocumentModal from "../components/Modals/WordDocumentModal";
@@ -30,24 +30,44 @@ import InstitutionInputModal from "../components/Modals/InstitutionInputModal";
 import ContactInputModal from "../components/Modals/ContactInputModal";
 import { convertPagesToHTML, parseDocumentToPages } from "../utils/documentConverter";
 import AdobeService from "../services/adobeService";
+import { applyTableStyle } from "../types/tableStyles";
 import { useLocation } from "react-router-dom";
+import ProjectCodeModal from "../components/Modals/ProjectCodeModal";
 
 export default function EditorPage() {
   const location = useLocation();
-  const [articleSettings, setArticleSettings] = useState(defaultArticleSettings);
-  
+  const [articleSettings, setArticleSettings] = useState(() => {
+    const projectData = location.state?.projectData;
+    if (projectData?.articleSettings && Object.keys(projectData.articleSettings).length > 0) {
+      return { ...defaultArticleSettings, ...projectData.articleSettings };
+    }
+    return defaultArticleSettings;
+  });
+
+  // Proje kaydet/yükle state'leri
+  const [showProjectCodeModal, setShowProjectCodeModal] = useState(false);
+  const [projectCode, setProjectCode] = useState(null);
+  const [isSavingProject, setIsSavingProject] = useState(false);
+
   // PDF Viewer mode kontrolü
   const pdfViewerMode = location.state?.mode === 'pdf-viewer';
   const pdfFile = location.state?.pdfFile;
   const pdfFileName = location.state?.fileName;
-  
+
   const [pages, setPages] = useState(() => {
+    // Proje kodundan yükleme
+    const projectData = location.state?.projectData;
+    if (projectData?.pages && projectData.pages.length > 0) {
+      console.log(`📂 Proje yüklendi: ${projectData.pages.length} sayfa (Kod: ${projectData.code})`);
+      return projectData.pages;
+    }
+
     const importedPages = location.state?.pages;
-    
+
     if (!importedPages) {
       return [defaultCoverPage(1, "free")];
     }
-    
+
     // Import edilen sayfalar zaten doğru formatta gelir:
     // { id, mode: 'document', documentContent: HTML, overlays: [], images: [], tables: [] }
     console.log(`📄 ${importedPages.length} sayfa import edildi`);
@@ -87,20 +107,20 @@ export default function EditorPage() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showEquationTemplatesPanel, setShowEquationTemplatesPanel] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  
+
   // Word Document Modal
   const [showWordDocumentModal, setShowWordDocumentModal] = useState(false);
   const [showWordEditor, setShowWordEditor] = useState(false);
   const [wordDocumentContent, setWordDocumentContent] = useState(null);
-  
+
   // Yazar ve kurum bilgileri modalları
   const [showAuthorModal, setShowAuthorModal] = useState(false);
   const [showInstitutionModal, setShowInstitutionModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
-  const [authors, setAuthors] = useState([]);
-  const [institutions, setInstitutions] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  
+  const [authors, setAuthors] = useState(() => location.state?.projectData?.authors || []);
+  const [institutions, setInstitutions] = useState(() => location.state?.projectData?.institutions || []);
+  const [contacts, setContacts] = useState(() => location.state?.projectData?.contacts || []);
+
   // Aktif tablo ve hücre takibi
   const [activeTable, setActiveTable] = useState(null);
   const [activeTableCell, setActiveTableCell] = useState(null); // {tableId, row, col}
@@ -110,6 +130,66 @@ export default function EditorPage() {
     style: null, // Metin stil ayarları
     format: null, // Kutu/layout ayarları
   });
+
+  // Scroll ile otomatik sayfa seçimi (scroll event listener)
+  useEffect(() => {
+    const scrollContainer = document.getElementById('pages-scroll-container');
+
+    if (!scrollContainer) {
+      console.warn('Scroll container bulunamadı!');
+      return;
+    }
+
+    let timeoutId = null;
+
+    const handleScroll = () => {
+      // Throttle: 150ms bekle
+      if (timeoutId) clearTimeout(timeoutId);
+
+      timeoutId = setTimeout(() => {
+        // Her sayfanın scroll container içindeki konumunu kontrol et
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const containerCenter = containerRect.top + containerRect.height / 2;
+
+        let closestPage = null;
+        let minDistance = Infinity;
+
+        pages.forEach((page) => {
+          const pageElement = document.getElementById(`page-${page.id}`);
+          if (pageElement) {
+            const pageRect = pageElement.getBoundingClientRect();
+            const pageCenter = pageRect.top + pageRect.height / 2;
+            const distance = Math.abs(pageCenter - containerCenter);
+
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestPage = page.id;
+            }
+          }
+        });
+
+        // En yakın sayfayı seç (activePageId state'ini oku, dependency değil)
+        if (closestPage) {
+          setActivePageId(prevId => {
+            if (prevId !== closestPage) {
+              console.log('📄 Scroll: Sayfa değişti ->', closestPage);
+              return closestPage;
+            }
+            return prevId;
+          });
+        }
+      }, 150);
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    console.log('✅ Scroll event listener eklendi');
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log('🗑️ Scroll event listener kaldırıldı');
+    };
+  }, [pages]); // activePageId'yi dependency'den çıkardık
 
   // ===== MAKALE AYARLARI DEĞİŞTİĞİNDE TÜM OVERLAYLARI GÜNCELLE =====
   const handleArticleSettingsChange = (newSettings) => {
@@ -166,11 +246,11 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              overlays: p.overlays.map((item) =>
-                item.id === id ? { ...item, ...partial } : item
-              ),
-            }
+            ...p,
+            overlays: p.overlays.map((item) =>
+              item.id === id ? { ...item, ...partial } : item
+            ),
+          }
           : p
       )
     );
@@ -181,11 +261,11 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              images: p.images.map((img) =>
-                img.id === id ? { ...img, ...partial } : img
-              ),
-            }
+            ...p,
+            images: p.images.map((img) =>
+              img.id === id ? { ...img, ...partial } : img
+            ),
+          }
           : p
       )
     );
@@ -196,14 +276,316 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              tables: (p.tables || []).map((table) =>
-                table.id === id ? { ...table, ...partial } : table
-              ),
-            }
+            ...p,
+            tables: (p.tables || []).map((table) =>
+              table.id === id ? { ...table, ...partial } : table
+            ),
+          }
           : p
       )
     );
+  };
+
+  // ===== TABLO İŞLEMLERİ =====
+  const addTableRowBefore = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newRows = table.rows + 1;
+                const newData = [...(table.data || [])];
+                newData.unshift(Array(table.cols).fill(''));
+                return { ...table, rows: newRows, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const addTableRow = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newRows = table.rows + 1;
+                const newData = [...(table.data || [])];
+                newData.push(Array(table.cols).fill(''));
+                return { ...table, rows: newRows, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const addTableColumnBefore = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newCols = table.cols + 1;
+                const newData = (table.data || []).map(row => ['', ...row]);
+                return { ...table, cols: newCols, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const addTableColumn = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newCols = table.cols + 1;
+                const newData = (table.data || []).map(row => [...row, '']);
+                return { ...table, cols: newCols, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const deleteTableRow = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id && table.rows > 1) {
+                const newRows = table.rows - 1;
+                const newData = [...(table.data || [])];
+                newData.pop();
+                return { ...table, rows: newRows, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const deleteTableColumn = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id && table.cols > 1) {
+                const newCols = table.cols - 1;
+                const newData = (table.data || []).map(row => row.slice(0, -1));
+                return { ...table, cols: newCols, data: newData };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const toggleTableHeaderRow = () => {
+    const id = contextMenu.targetId;
+    if (!id) return;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                return { ...table, headerRow: !table.headerRow };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const changeTableCellColor = (color, isBackground = true) => {
+    const id = contextMenu.targetId;
+    const selectedCells = contextMenu.selectedCells || [];
+
+    if (!id || selectedCells.length === 0) {
+      alert("Lütfen renklendirmek istediğiniz hücreleri seçin (Ctrl + tıklama ile).");
+      setContextMenu((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newCellStyles = { ...(table.cellStyles || {}) };
+
+                selectedCells.forEach(cell => {
+                  const key = `${cell.row}-${cell.col}`;
+                  newCellStyles[key] = { ...(newCellStyles[key] || {}) };
+
+                  if (isBackground) {
+                    newCellStyles[key].backgroundColor = color;
+                  } else {
+                    newCellStyles[key].color = color;
+                  }
+                });
+
+                return { ...table, cellStyles: newCellStyles };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+  };
+
+  const mergeTableCells = () => {
+    const id = contextMenu.targetId;
+    const selectedCells = contextMenu.selectedCells || [];
+
+    if (!id || selectedCells.length < 2) {
+      alert("Lütfen birleştirmek istediğiniz en az 2 hücreyi seçin (Ctrl + tıklama ile).");
+      setContextMenu((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+
+    const rows = selectedCells.map(c => c.row);
+    const cols = selectedCells.map(c => c.col);
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    const rowspan = maxRow - minRow + 1;
+    const colspan = maxCol - minCol + 1;
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newMergedCells = { ...(table.mergedCells || {}) };
+                const cellKey = `${minRow}-${minCol}`;
+
+                selectedCells.forEach(cell => {
+                  const key = `${cell.row}-${cell.col}`;
+                  delete newMergedCells[key];
+                });
+
+                newMergedCells[cellKey] = { colspan, rowspan };
+
+                return { ...table, mergedCells: newMergedCells };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const splitTableCell = () => {
+    const id = contextMenu.targetId;
+    const selectedCells = contextMenu.selectedCells || [];
+
+    if (!id || selectedCells.length === 0) {
+      alert("Lütfen bölmek istediğiniz birleştirilmiş hücreyi seçin.");
+      setContextMenu((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+
+    setPages((prev) =>
+      prev.map((p) =>
+        p.id === activePageId
+          ? {
+            ...p,
+            tables: (p.tables || []).map((table) => {
+              if (table.id === id) {
+                const newMergedCells = { ...(table.mergedCells || {}) };
+
+                selectedCells.forEach(cell => {
+                  const key = `${cell.row}-${cell.col}`;
+                  delete newMergedCells[key];
+                });
+
+                return { ...table, mergedCells: newMergedCells };
+              }
+              return table;
+            }),
+          }
+          : p
+      )
+    );
+
+    setContextMenu((prev) => ({ ...prev, visible: false }));
   };
 
   // ---------------------------
@@ -211,7 +593,7 @@ export default function EditorPage() {
   // ---------------------------
   const addText = () => {
     const activePage = pages.find((p) => p.id === activePageId);
-    
+
     // Document mode'da editöre focus ver, free mode'da text box oluştur
     if (activePage?.mode === "document") {
       currentEditor?.commands.focus();
@@ -227,28 +609,28 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              overlays: [
-                ...p.overlays,
-                {
-                  id,
-                  type: "text",
-                  html: "<p>Yeni metin</p>",
-                  x: 100,
-                  y: 100,
-                  width: 250,
-                  height: 50,
-                  rotate: 0,
-                  // Makale ayarlarını uygula
-                  fontSize: articleSettings.bodyFontSize,
-                  color: articleSettings.bodyColor,
-                  lineHeight: articleSettings.bodyLineHeight,
-                  textIndent: articleSettings.paragraphIndent,
-                  titleFontSize: articleSettings.titleFontSize,
-                  titleColor: articleSettings.titleColor,
-                },
-              ],
-            }
+            ...p,
+            overlays: [
+              ...p.overlays,
+              {
+                id,
+                type: "text",
+                html: "<p>Yeni metin</p>",
+                x: 100,
+                y: 100,
+                width: 250,
+                height: 50,
+                rotate: 0,
+                // Makale ayarlarını uygula
+                fontSize: articleSettings.bodyFontSize,
+                color: articleSettings.bodyColor,
+                lineHeight: articleSettings.bodyLineHeight,
+                textIndent: articleSettings.paragraphIndent,
+                titleFontSize: articleSettings.titleFontSize,
+                titleColor: articleSettings.titleColor,
+              },
+            ],
+          }
           : p
       )
     );
@@ -264,68 +646,78 @@ export default function EditorPage() {
     setShowTableModal(true);
   };
 
-  const handleInsertTable = (rows, cols) => {
+  const handleInsertTable = (styleId, rows, cols) => {
     const activePage = pages.find((p) => p.id === activePageId);
-    
-    // Document mode'da direkt editöre tablo ekle
-    if (activePage?.mode === "document" && currentEditor) {
-      currentEditor
-        .chain()
-        .focus()
-        .insertTable({ rows, cols, withHeaderRow: true })
-        .run();
-      setShowTableModal(false);
-      return;
-    }
 
     if (!activePage) {
       setShowTableModal(false);
       return;
     }
 
-    // Serbest modda TableOverlay kullan
-    const id = crypto.randomUUID();
-    const newTable = {
-      id,
-      x: 100,
-      y: 100,
-      width: Math.min(500, cols * 120),
-      height: Math.min(300, rows * 40 + 40),
-      rows,
-      cols,
-      data: [],
-      headerRow: true,
-    };
+    const { cellStyles, headerRow, tableStyle } = applyTableStyle(styleId, rows, cols);
 
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: [...(p.tables || []), newTable],
-            }
-          : p
-      )
-    );
+    if (activePage.mode === "document" && currentEditor) {
+      // Belge modunda TipTap HTML tablo ekle
+      let tableHTML = `<table style="border-collapse: ${tableStyle.borderCollapse || 'collapse'}; width: 100%; border: ${tableStyle.border || 'solid #000000 0.5pt'}; font-family: ${tableStyle.fontFamily || 'Calibri, sans-serif'}; font-size: ${tableStyle.fontSize || '11pt'};"><tbody>`;
+
+      for (let r = 0; r < rows; r++) {
+        tableHTML += '<tr>';
+        for (let c = 0; c < cols; c++) {
+          const cellKey = `${r}-${c}`;
+          const cellStyle = cellStyles[cellKey] || {};
+          const isHeader = r === 0 && headerRow;
+          const tag = isHeader ? 'th' : 'td';
+          const styleStr = `border: ${cellStyle.border || 'solid #000000 0.5pt'}; ${cellStyle.borderBottom ? `border-bottom: ${cellStyle.borderBottom};` : ''} padding: ${cellStyle.padding || '0cm 5.4pt'}; vertical-align: ${cellStyle.verticalAlign || 'top'}; background-color: ${cellStyle.backgroundColor || '#ffffff'}; color: ${cellStyle.color || '#000000'}; ${cellStyle.fontWeight ? `font-weight: ${cellStyle.fontWeight};` : ''} text-align: ${cellStyle.textAlign || 'left'};`;
+          tableHTML += `<${tag} style="${styleStr}"><p></p></${tag}>`;
+        }
+        tableHTML += '</tr>';
+      }
+      tableHTML += '</tbody></table>';
+
+      setTimeout(() => {
+        if (currentEditor && currentEditor.view) {
+          currentEditor.chain().focus().insertContent(tableHTML).run();
+        }
+      }, 100);
+    } else {
+      // Serbest modda TableOverlay kullan
+      const id = crypto.randomUUID();
+      const newTable = {
+        id,
+        x: 100,
+        y: 100,
+        width: Math.min(500, cols * 120),
+        height: Math.min(300, rows * 40 + 40),
+        rows,
+        cols,
+        data: [],
+        headerRow,
+        cellStyles,
+        tableStyle,
+      };
+
+      setPages((prev) =>
+        prev.map((p) =>
+          p.id === activePageId
+            ? { ...p, tables: [...(p.tables || []), newTable] }
+            : p
+        )
+      );
+    }
 
     setShowTableModal(false);
-    
-    // Yeni tabloyu seç
-    setTimeout(() => {
-      setActiveOverlay(id);
-    }, 50);
   };
 
   const addPage = (templateKey = "blank") => {
     const newId = pages.length ? pages[pages.length - 1].id + 1 : 1;
-    
+
     setPages((prev) => {
       // Şablondan sayfa oluştur
       const template = pageTemplates[templateKey];
       if (template) {
         return [...prev, template.create(newId, articleSettings)];
       }
-      
+
       // Fallback: Boş sayfa
       return [
         ...prev,
@@ -356,11 +748,11 @@ export default function EditorPage() {
   // ---------------------------
   //  YAZAR VE KURUM BİLGİLERİ
   // ---------------------------
-  
+
   // Yazar bilgilerini güncelle
   const handleSaveAuthors = (authorList) => {
     setAuthors(authorList);
-    
+
     // Tüm sayfalardaki authors overlay'ini güncelle (sadece cover değil)
     setPages((prev) =>
       prev.map((page) => {
@@ -376,7 +768,7 @@ export default function EditorPage() {
                   return `${name}${affiliation}`;
                 })
                 .join(", ");
-              
+
               // Cover page için farklı format
               if (page.type === "cover") {
                 return {
@@ -401,7 +793,7 @@ export default function EditorPage() {
   // Kurum bilgilerini güncelle
   const handleSaveInstitutions = (institutionList) => {
     setInstitutions(institutionList);
-    
+
     // Tüm sayfalardaki institution overlay'ini güncelle (sadece cover değil)
     setPages((prev) =>
       prev.map((page) => {
@@ -418,12 +810,12 @@ export default function EditorPage() {
                   if (inst.department) parts.push(inst.department);
                   if (inst.city) parts.push(inst.city);
                   if (inst.country) parts.push(inst.country);
-                  
+
                   const institutionText = parts.join(" / ");
                   return `<sup>${inst.number}</sup>${institutionText}`;
                 })
                 .join("<br/>");
-              
+
               // Cover page için farklı format
               if (page.type === "cover") {
                 return {
@@ -448,7 +840,7 @@ export default function EditorPage() {
   // İletişim bilgilerini güncelle
   const handleSaveContacts = (contactList) => {
     setContacts(contactList);
-    
+
     // Tüm sayfalardaki contact overlay'ini güncelle
     setPages((prev) =>
       prev.map((page) => {
@@ -466,7 +858,7 @@ export default function EditorPage() {
                   return parts.join("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"); // Yan yana - daha fazla boşluk
                 })
                 .join("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"); // Birden fazla kişi varsa yan yana - daha fazla boşluk
-              
+
               return {
                 ...overlay,
                 html: `<p style="margin: 0; line-height: 1.4;">${formattedContacts}</p>`,
@@ -496,7 +888,7 @@ export default function EditorPage() {
   // ---------------------------
   //  MATEMATİK FONKSİYONLARI
   // ---------------------------
-  
+
   // Denklem editörünü aç
   const handleOpenEquationEditor = () => {
     setShowEquationEditor(true);
@@ -519,12 +911,12 @@ export default function EditorPage() {
       katexHTML = mode === "inline" ? `$${latex}$` : `$$${latex}$$`;
     }
 
-    const equationHTML = mode === "inline" 
+    const equationHTML = mode === "inline"
       ? `<span class="math-inline katex-rendered" data-latex="${latex}">${katexHTML}</span>`
       : `<div class="math-block katex-rendered" data-latex="${latex}">${katexHTML}</div>`;
 
     const activePage = pages.find((p) => p.id === activePageId);
-    
+
     // Document mode - editöre ekle
     if (activePage?.mode === "document" && currentEditor) {
       try {
@@ -535,7 +927,7 @@ export default function EditorPage() {
         console.error('Document editor hatası:', error);
       }
     }
-    
+
     // Serbest mod + Tablo hücresi aktif - hücreye ekle
     if (activeTableCell && activePage) {
       const table = activePage.tables?.find((t) => t.id === activeTableCell.tableId);
@@ -550,7 +942,7 @@ export default function EditorPage() {
         return;
       }
     }
-    
+
     // Serbest mod + TextPropertiesPanel açık - overlay HTML'ine ekle
     if (activeOverlay && activePage) {
       const overlay = activePage.overlays.find((o) => o.id === activeOverlay);
@@ -562,7 +954,7 @@ export default function EditorPage() {
         return;
       }
     }
-    
+
     // Hiçbiri değilse - Yeni text box oluştur
     if (!activePage) return;
 
@@ -619,7 +1011,7 @@ export default function EditorPage() {
     const symbolHTML = `<span class="math-inline katex-rendered" data-latex="${latex}">${katexHTML}</span>`;
 
     const activePage = pages.find((p) => p.id === activePageId);
-    
+
     // Document mode - editöre ekle
     if (activePage?.mode === "document" && currentEditor) {
       try {
@@ -630,7 +1022,7 @@ export default function EditorPage() {
         console.error('Document editor hatası:', error);
       }
     }
-    
+
     // Serbest mod + Tablo hücresi aktif - hücreye ekle
     if (activeTableCell && activePage) {
       const table = activePage.tables?.find((t) => t.id === activeTableCell.tableId);
@@ -643,7 +1035,7 @@ export default function EditorPage() {
         return;
       }
     }
-    
+
     // Serbest mod + TextPropertiesPanel açık - overlay HTML'ine ekle
     if (activeOverlay && activePage) {
       const overlay = activePage.overlays.find((o) => o.id === activeOverlay);
@@ -655,7 +1047,7 @@ export default function EditorPage() {
         return;
       }
     }
-    
+
     // Hiçbiri değilse - Yeni text box oluştur
     if (!activePage) return;
 
@@ -694,14 +1086,14 @@ export default function EditorPage() {
     // Temiz mod aç
     const wasCleanView = cleanView;
     if (!wasCleanView) setCleanView(true);
-    
+
     // DOM'un güncellenmesi için bekle
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     try {
       // Tüm sayfa containerlarını bul
       const pageElements = document.querySelectorAll('[id^="page-"]');
-      
+
       if (pageElements.length === 0) {
         alert("Export edilecek sayfa bulunamadı!");
         return;
@@ -805,11 +1197,11 @@ export default function EditorPage() {
   // ---------------------------
   const exportPDF = async () => {
     console.log("🔴 PROFESYONEL PDF EXPORT BAŞLIYOR");
-    
+
     // Temiz görünüm modunu aç
     const wasCleanView = cleanView;
     if (!wasCleanView) setCleanView(true);
-    
+
     // DOM güncellemesi için bekle
     await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -823,7 +1215,7 @@ export default function EditorPage() {
 
       const pdfWidth = 595.28;  // A4 genişlik pt cinsinden
       const pdfHeight = 841.89; // A4 yükseklik pt cinsinden
-      
+
       // Editördeki sayfa boyutları (px)
       const pageWidth = 794;
       const pageHeight = 1123;
@@ -833,7 +1225,7 @@ export default function EditorPage() {
       for (let i = 0; i < pages.length; i++) {
         const page = pages[i];
         const pageElement = document.getElementById(`page-${page.id}`);
-        
+
         if (!pageElement) {
           console.warn(`Sayfa ${page.id} bulunamadı`);
           continue;
@@ -843,11 +1235,11 @@ export default function EditorPage() {
 
         // Sayfayı klonla
         const clonedPage = pageElement.cloneNode(true);
-        
+
         // Gereksiz elementleri temizle
         const selectorsToRemove = [
           '.resize-handle',
-          '.delete-btn', 
+          '.delete-btn',
           '.edit-btn',
           '.drag-handle',
           'button',
@@ -857,7 +1249,7 @@ export default function EditorPage() {
           '.ruler',
           '[data-control]'
         ];
-        
+
         selectorsToRemove.forEach(selector => {
           clonedPage.querySelectorAll(selector).forEach(el => {
             if (el.parentNode) el.parentNode.removeChild(el);
@@ -980,20 +1372,20 @@ export default function EditorPage() {
             prev.map((p) =>
               p.id === activePageId
                 ? {
-                    ...p,
-                    images: [
-                      ...p.images,
-                      {
-                        id,
-                        src: data,
-                        x: 150,
-                        y: 150,
-                        width: displayWidth,
-                        height: displayHeight,
-                        angle: 0,
-                      },
-                    ],
-                  }
+                  ...p,
+                  images: [
+                    ...p.images,
+                    {
+                      id,
+                      src: data,
+                      x: 150,
+                      y: 150,
+                      width: displayWidth,
+                      height: displayHeight,
+                      angle: 0,
+                    },
+                  ],
+                }
                 : p
             )
           );
@@ -1034,13 +1426,13 @@ export default function EditorPage() {
             prev.map((p) =>
               p.id === activePageId
                 ? {
-                    ...p,
-                    images: p.images.map((img) =>
-                      img.id === targetId
-                        ? { ...img, src: data }
-                        : img
-                    ),
-                  }
+                  ...p,
+                  images: p.images.map((img) =>
+                    img.id === targetId
+                      ? { ...img, src: data }
+                      : img
+                  ),
+                }
                 : p
             )
           );
@@ -1078,23 +1470,23 @@ export default function EditorPage() {
           prev.map((p) =>
             p.id === activePageId
               ? {
-                  ...p,
-                  // Seçili text overlay'ı sil
-                  overlays: p.overlays.filter((o) => o.id !== targetId),
-                  // Yerine görsel ekle
-                  images: [
-                    ...p.images,
-                    {
-                      id: imageId,
-                      src: data,
-                      x: overlay.x,
-                      y: overlay.y,
-                      width: overlay.width,
-                      height: overlay.height,
-                      angle: 0,
-                    },
-                  ],
-                }
+                ...p,
+                // Seçili text overlay'ı sil
+                overlays: p.overlays.filter((o) => o.id !== targetId),
+                // Yerine görsel ekle
+                images: [
+                  ...p.images,
+                  {
+                    id: imageId,
+                    src: data,
+                    x: overlay.x,
+                    y: overlay.y,
+                    width: overlay.width,
+                    height: overlay.height,
+                    angle: 0,
+                  },
+                ],
+              }
               : p
           )
         );
@@ -1143,11 +1535,11 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              overlays: p.overlays.filter((o) => o.id !== id),
-              images: p.images.filter((img) => img.id !== id),
-              tables: (p.tables || []).filter((table) => table.id !== id),
-            }
+            ...p,
+            overlays: p.overlays.filter((o) => o.id !== id),
+            images: p.images.filter((img) => img.id !== id),
+            tables: (p.tables || []).filter((table) => table.id !== id),
+          }
           : p
       )
     );
@@ -1157,322 +1549,6 @@ export default function EditorPage() {
     if (inlineEditingId === id) setInlineEditingId(null);
   };
 
-  // ===== TABLO İŞLEMLERİ =====
-  const addTableRowBefore = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newRows = table.rows + 1;
-                  const newData = [...(table.data || [])];
-                  // Başa yeni satır ekle (boş hücrelerle)
-                  newData.unshift(Array(table.cols).fill(''));
-                  return { ...table, rows: newRows, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const addTableRow = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newRows = table.rows + 1;
-                  const newData = [...(table.data || [])];
-                  // Yeni satır ekle (boş hücrelerle)
-                  newData.push(Array(table.cols).fill(''));
-                  return { ...table, rows: newRows, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const addTableColumnBefore = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newCols = table.cols + 1;
-                  const newData = (table.data || []).map(row => ['', ...row]);
-                  return { ...table, cols: newCols, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const addTableColumn = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newCols = table.cols + 1;
-                  const newData = (table.data || []).map(row => [...row, '']);
-                  return { ...table, cols: newCols, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const deleteTableRow = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id && table.rows > 1) {
-                  const newRows = table.rows - 1;
-                  const newData = [...(table.data || [])];
-                  newData.pop(); // Son satırı sil
-                  return { ...table, rows: newRows, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const deleteTableColumn = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id && table.cols > 1) {
-                  const newCols = table.cols - 1;
-                  const newData = (table.data || []).map(row => row.slice(0, -1));
-                  return { ...table, cols: newCols, data: newData };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const toggleTableHeaderRow = () => {
-    const id = contextMenu.targetId;
-    if (!id) return;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  return { ...table, headerRow: !table.headerRow };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const changeTableCellColor = (color, isBackground = true) => {
-    const id = contextMenu.targetId;
-    const selectedCells = contextMenu.selectedCells || [];
-    
-    console.log('changeTableCellColor çağrıldı:', { id, selectedCells, color, isBackground });
-    
-    if (!id || selectedCells.length === 0) {
-      alert("Lütfen renklendirmek istediğiniz hücreleri seçin (Ctrl + tıklama ile).");
-      setContextMenu((prev) => ({ ...prev, visible: false }));
-      return;
-    }
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newCellStyles = { ...(table.cellStyles || {}) };
-                  
-                  selectedCells.forEach(cell => {
-                    const key = `${cell.row}-${cell.col}`;
-                    // Her hücre stilini tamamen yeni bir obje olarak oluştur
-                    newCellStyles[key] = { ...(newCellStyles[key] || {}) };
-                    
-                    if (isBackground) {
-                      newCellStyles[key].backgroundColor = color;
-                      console.log(`Hücre ${key} arka plan rengi ${color} olarak ayarlandı`);
-                    } else {
-                      newCellStyles[key].color = color;
-                      console.log(`Hücre ${key} yazı rengi ${color} olarak ayarlandı`);
-                    }
-                  });
-                  
-                  console.log('Yeni cellStyles:', newCellStyles);
-                  return { ...table, cellStyles: newCellStyles };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    // Menüyü hemen kapatma, kullanıcı birden fazla renk seçebilsin
-    // setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const mergeTableCells = () => {
-    const id = contextMenu.targetId;
-    const selectedCells = contextMenu.selectedCells || [];
-    
-    if (!id || selectedCells.length < 2) {
-      alert("Lütfen birleştirmek istediğiniz en az 2 hücreyi seçin (Ctrl + tıklama ile).");
-      setContextMenu((prev) => ({ ...prev, visible: false }));
-      return;
-    }
-
-    // Find min/max row and col to determine merge area
-    const rows = selectedCells.map(c => c.row);
-    const cols = selectedCells.map(c => c.col);
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...cols);
-    const maxCol = Math.max(...cols);
-
-    const rowspan = maxRow - minRow + 1;
-    const colspan = maxCol - minCol + 1;
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newMergedCells = { ...(table.mergedCells || {}) };
-                  const cellKey = `${minRow}-${minCol}`;
-                  
-                  // Remove any existing merges for selected cells
-                  selectedCells.forEach(cell => {
-                    const key = `${cell.row}-${cell.col}`;
-                    delete newMergedCells[key];
-                  });
-                  
-                  // Add new merge
-                  newMergedCells[cellKey] = { colspan, rowspan };
-                  
-                  return { ...table, mergedCells: newMergedCells };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
-
-  const splitTableCell = () => {
-    const id = contextMenu.targetId;
-    const selectedCells = contextMenu.selectedCells || [];
-    
-    if (!id || selectedCells.length === 0) {
-      alert("Lütfen bölmek istediğiniz birleştirilmiş hücreyi seçin.");
-      setContextMenu((prev) => ({ ...prev, visible: false }));
-      return;
-    }
-
-    setPages((prev) =>
-      prev.map((p) =>
-        p.id === activePageId
-          ? {
-              ...p,
-              tables: (p.tables || []).map((table) => {
-                if (table.id === id) {
-                  const newMergedCells = { ...(table.mergedCells || {}) };
-                  
-                  // Remove merge for selected cells
-                  selectedCells.forEach(cell => {
-                    const key = `${cell.row}-${cell.col}`;
-                    delete newMergedCells[key];
-                  });
-                  
-                  return { ...table, mergedCells: newMergedCells };
-                }
-                return table;
-              }),
-            }
-          : p
-      )
-    );
-
-    setContextMenu((prev) => ({ ...prev, visible: false }));
-  };
 
   // ===== STİL KOPYALA =====
   const copyStyle = () => {
@@ -1507,16 +1583,16 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              overlays: p.overlays.map((o) =>
-                o.id === id
-                  ? {
-                      ...o,
-                      ...clipboard.style,
-                    }
-                  : o
-              ),
-            }
+            ...p,
+            overlays: p.overlays.map((o) =>
+              o.id === id
+                ? {
+                  ...o,
+                  ...clipboard.style,
+                }
+                : o
+            ),
+          }
           : p
       )
     );
@@ -1555,25 +1631,62 @@ export default function EditorPage() {
       prev.map((p) =>
         p.id === activePageId
           ? {
-              ...p,
-              overlays: p.overlays.map((o) =>
-                o.id === id
-                  ? {
-                      ...o,
-                      width: clipboard.format.width,
-                      height: clipboard.format.height,
-                      rotate: clipboard.format.rotate,
-                      // x ve y KORUYORUZ - değişmez!
-                    }
-                  : o
-              ),
-            }
+            ...p,
+            overlays: p.overlays.map((o) =>
+              o.id === id
+                ? {
+                  ...o,
+                  width: clipboard.format.width,
+                  height: clipboard.format.height,
+                  rotate: clipboard.format.rotate,
+                  // x ve y KORUYORUZ - değişmez!
+                }
+                : o
+            ),
+          }
           : p
       )
     );
 
     setContextMenu({ visible: false, x: 0, y: 0, targetId: null, targetType: null });
     alert("✅ Biçim yapıştırıldı!");
+  };
+
+  // ---------------------------
+  //  PROJEYİ KAYDET
+  // ---------------------------
+  const saveProject = async () => {
+    setIsSavingProject(true);
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/projects/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pages,
+          articleSettings,
+          authors,
+          institutions,
+          contacts,
+          projectName: 'Makale Projesi'
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Kaydetme başarısız');
+      }
+
+      const result = await response.json();
+      console.log(`💾 Proje kaydedildi: ${result.code}`);
+      setProjectCode(result.code);
+      setShowProjectCodeModal(true);
+    } catch (error) {
+      console.error('❌ Proje kaydetme hatası:', error);
+      alert('Proje kaydedilemedi: ' + error.message);
+    } finally {
+      setIsSavingProject(false);
+    }
   };
 
   // ---------------------------
@@ -1594,7 +1707,7 @@ export default function EditorPage() {
           <div className="bg-gray-800 text-white px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className="text-lg font-semibold">📄 {pdfFileName}</span>
-              <span className="text-sm text-gray-400">Adobe PDF Viewer</span>
+              <span className="text-sm text-gray-400">PDF Viewer</span>
             </div>
             <button
               onClick={() => window.history.back()}
@@ -1608,1272 +1721,1297 @@ export default function EditorPage() {
       ) : (
         // NORMAL EDITOR MODE
         <>
-      {/* ÜST TOOLBAR */}
-      <MainToolbar
-        onAddText={addText}
-        onAddImage={addImage}
-        onAddTable={addTable}
-        onExport={exportPNG}
-        onExportPDF={exportPDF}
-        onExportAdobePDF={exportAdobePDF}
-        onExportAdobeWord={exportAdobeWord}
-        onAddPage={addPage}
-        onShowTemplateModal={() => setShowTemplateModal(true)}
-        onOpenEquationEditor={handleOpenEquationEditor}
-        onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-        onOpenWordDocumentModal={() => setShowWordDocumentModal(true)}
-        cleanView={cleanView}
-        onToggleCleanView={() => setCleanView(!cleanView)}
-      />
+          {/* ÜST TOOLBAR */}
+          <MainToolbar
+            onAddText={addText}
+            onAddImage={addImage}
+            onAddTable={addTable}
+            onExport={exportPNG}
+            onExportPDF={exportPDF}
+            onExportAdobePDF={exportAdobePDF}
+            onExportAdobeWord={exportAdobeWord}
+            onAddPage={addPage}
+            onShowTemplateModal={() => setShowTemplateModal(true)}
+            onOpenEquationEditor={handleOpenEquationEditor}
+            onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+            onOpenWordDocumentModal={() => setShowWordDocumentModal(true)}
+            cleanView={cleanView}
+            onToggleCleanView={() => setCleanView(!cleanView)}
+            onSaveProject={saveProject}
+            isSavingProject={isSavingProject}
+          />
 
-      <div className="flex flex-row grow">
-        {/* SOL SAYFA PANELİ - Temiz görünüm dışında göster */}
-        {!cleanView && (
-          <PagesPanel
-          pages={pages}
-          activePageId={activePageId}
-          onSelectPage={(id) => {
-            setActivePageId(id);
-            setActiveOverlay(null);
-            setInlineEditingId(null);
-            setContextMenu((prev) => ({ ...prev, visible: false }));
-            
-            // Sayfaya scroll yap
-            setTimeout(() => {
-              const pageElement = document.getElementById(`page-${id}`);
-              if (pageElement) {
-                pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }, 50);
-          }}
-          onAddPage={addPage}
-          onChangePageMode={(pageId, newMode) => {
-            setPages((prev) =>
-              prev.map((p) =>
-                p.id === pageId
-                  ? { ...p, mode: newMode }
-                  : p
-              )
-            );
-          }}
-        />
-        )}
+          <div className="flex flex-row grow">
+            {/* SOL SAYFA PANELİ - Temiz görünüm dışında göster */}
+            {!cleanView && (
+              <PagesPanel
+                pages={pages}
+                activePageId={activePageId}
+                onSelectPage={(id) => {
+                  setActivePageId(id);
+                  setActiveOverlay(null);
+                  setInlineEditingId(null);
+                  setContextMenu((prev) => ({ ...prev, visible: false }));
 
-        {/* TÜM SAYFALAR - Scroll ile görünür */}
-        <div className="flex-1 overflow-y-auto bg-gray-100">
-          {/* Sticky Toolbar - Belge Modu Kontrolleri */}
-          {!cleanView && activePage?.mode === "document" && currentEditor && (
-            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
-              <DocumentToolbar 
-                editor={currentEditor}
-                onOpenEquationEditor={handleOpenEquationEditor}
-                onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-              />
-            </div>
-          )}
+                  // Sayfaya scroll yap
+                  setTimeout(() => {
+                    const pageElement = document.getElementById(`page-${id}`);
+                    if (pageElement) {
+                      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 50);
+                }}
+                onAddPage={addPage}
+                onChangePageMode={(pageId, newMode) => {
+                  setPages((prev) =>
+                    prev.map((p) =>
+                      p.id === pageId
+                        ? { ...p, mode: newMode }
+                        : p
+                    )
+                  );
+                }}
+                onDeletePage={(pageId) => {
+                  // En az 1 sayfa kalmalı
+                  if (pages.length <= 1) {
+                    alert('Son sayfayı silemezsiniz!');
+                    return;
+                  }
 
-          {/* Sticky Toolbar - Serbest Mod Kontrolleri */}
-          {!cleanView && activePage?.mode === "free" && currentEditor && (
-            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
-              <DocumentToolbar 
-                editor={currentEditor}
-                onOpenEquationEditor={handleOpenEquationEditor}
-                onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-                showGridControls={true}
-                showGrid={showGrid}
-                setShowGrid={setShowGrid}
-                snapEnabled={snapEnabled}
-                setSnapEnabled={setSnapEnabled}
-                gridSize={gridSize}
-                setGridSize={setGridSize}
-                zoom={zoom}
-                setZoom={setZoom}
-                showGuides={showGuides}
-                setShowGuides={setShowGuides}
-              />
-            </div>
-          )}
+                  // Sayfayı sil
+                  setPages((prev) => prev.filter((p) => p.id !== pageId));
 
-          {/* Eski Custom Toolbar - Yedek */}
-          {!cleanView && activePage?.mode === "free" && false && (
-            <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
-              <div className="flex items-center justify-between px-6 py-2 gap-4">
-                {/* Sol Grup - Format Kontrolleri */}
-                <div className="flex items-center gap-1 flex-wrap">
-                  {/* Başlık Seçimi */}
-                  <div className="flex items-center gap-1">
-                    <select
-                      onMouseDown={(e) => e.preventDefault()}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (!currentEditor) return;
-                        if (value === "p") {
-                          currentEditor.chain().focus().setParagraph().run();
-                        } else if (value === "h1") {
-                          currentEditor.chain().focus().toggleHeading({ level: 1 }).run();
-                        } else if (value === "h2") {
-                          currentEditor.chain().focus().toggleHeading({ level: 2 }).run();
-                        } else if (value === "h3") {
-                          currentEditor.chain().focus().toggleHeading({ level: 3 }).run();
-                        }
-                      }}
-                      value={
-                        currentEditor?.isActive("heading", { level: 1 })
-                          ? "h1"
-                          : currentEditor?.isActive("heading", { level: 2 })
-                          ? "h2"
-                          : currentEditor?.isActive("heading", { level: 3 })
-                          ? "h3"
-                          : "p"
-                      }
-                      disabled={!currentEditor || !activeOverlay}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Metin Stili"
-                    >
-                      <option value="p">Normal</option>
-                      <option value="h1">Başlık 1</option>
-                      <option value="h2">Başlık 2</option>
-                      <option value="h3">Başlık 3</option>
-                    </select>
-                  </div>
-
-                  <div className="w-px h-6 bg-gray-300"></div>
-
-                  {/* Text Formatting */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().toggleBold().run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('bold') ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="Kalın (Ctrl+B)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-                        <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
-                      </svg>
-                    </button>
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().toggleItalic().run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('italic') ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="İtalik (Ctrl+I)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="19" y1="4" x2="10" y2="4"></line>
-                        <line x1="14" y1="20" x2="5" y2="20"></line>
-                        <line x1="15" y1="4" x2="9" y2="20"></line>
-                      </svg>
-                    </button>
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().toggleUnderline().run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('underline') ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="Altı Çizili (Ctrl+U)"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path>
-                        <line x1="4" y1="21" x2="20" y2="21"></line>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="w-px h-6 bg-gray-300"></div>
-
-                  {/* Text Align */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().setTextAlign('left').run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'left' }) ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="Sola Hizala"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="17" y1="10" x2="3" y2="10"></line>
-                        <line x1="21" y1="6" x2="3" y2="6"></line>
-                        <line x1="21" y1="14" x2="3" y2="14"></line>
-                        <line x1="17" y1="18" x2="3" y2="18"></line>
-                      </svg>
-                    </button>
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().setTextAlign('center').run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'center' }) ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="Ortala"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="10" x2="6" y2="10"></line>
-                        <line x1="21" y1="6" x2="3" y2="6"></line>
-                        <line x1="21" y1="14" x2="3" y2="14"></line>
-                        <line x1="18" y1="18" x2="6" y2="18"></line>
-                      </svg>
-                    </button>
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().setTextAlign('right').run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'right' }) ? 'bg-blue-100 text-blue-600' : ''}`}
-                      title="Sağa Hizala"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="21" y1="10" x2="7" y2="10"></line>
-                        <line x1="21" y1="6" x2="3" y2="6"></line>
-                        <line x1="21" y1="14" x2="3" y2="14"></line>
-                        <line x1="21" y1="18" x2="7" y2="18"></line>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="w-px h-6 bg-gray-300"></div>
-
-                  {/* Font Size & Color */}
-                  <div className="flex items-center gap-1">
-                    <select
-                      onMouseDown={(e) => e.preventDefault()}
-                      value={currentEditor?.getAttributes('textStyle').fontSize || '16px'}
-                      onChange={(e) => currentEditor?.chain().focus().setFontSize(e.target.value).run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Yazı Boyutu"
-                    >
-                      <option value="12px">12px</option>
-                      <option value="14px">14px</option>
-                      <option value="16px">16px</option>
-                      <option value="18px">18px</option>
-                      <option value="20px">20px</option>
-                      <option value="24px">24px</option>
-                      <option value="28px">28px</option>
-                      <option value="32px">32px</option>
-                    </select>
-
-                    <input
-                      type="color"
-                      onMouseDown={(e) => e.preventDefault()}
-                      value={currentEditor?.getAttributes('textStyle').color || '#000000'}
-                      onChange={(e) => currentEditor?.chain().focus().setColor(e.target.value).run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className="w-8 h-8 border border-gray-300 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Yazı Rengi"
-                    />
-                    
-                    <input
-                      type="color"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onChange={(e) => currentEditor?.chain().focus().setHighlight({ color: e.target.value }).run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      defaultValue="#FFFF00"
-                      className="w-8 h-8 border border-gray-300 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Vurgu Rengi"
-                    />
-                    
-                    <button
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => currentEditor?.chain().focus().toggleHighlight().run()}
-                      disabled={!currentEditor || !activeOverlay}
-                      className={`px-2 py-1.5 rounded text-xs transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('highlight') ? 'bg-yellow-100 text-yellow-700' : ''}`}
-                      title="Vurgula"
-                    >
-                      🖍 Vurgu
-                    </button>
-                  </div>
-
-                  <div className="w-px h-6 bg-gray-300"></div>
-
-                  {/* Math */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={handleOpenEquationEditor}
-                      disabled={!activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-50'} text-purple-600`}
-                      title="Denklem Ekle"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/>
-                      </svg>
-                    </button>
-                    <button
-                      onClick={handleOpenMathSymbolPanel}
-                      disabled={!activeOverlay}
-                      className={`p-1.5 rounded transition-all ${!activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-50'} text-indigo-600`}
-                      title="Sembol Ekle"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                        <path d="M2 2l7.586 7.586"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Sağ Grup - Grid/Snap/Zoom Kontrolleri */}
-                <div className="flex items-center gap-2">
-                {/* Grid Toggle */}
-                <button
-                  onClick={() => setShowGrid(!showGrid)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                    showGrid
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
-                      : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Grid göster/gizle"
-                >
-                  ⌘ Grid
-                </button>
-
-                {/* Snap Toggle */}
-                <button
-                  onClick={() => setSnapEnabled(!snapEnabled)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                    snapEnabled
-                      ? "bg-green-100 text-green-700 border border-green-300"
-                      : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Grid'e yapışmayı aç/kapat"
-                >
-                  🧲 Snap
-                </button>
-
-                <div className="w-px h-6 bg-gray-300"></div>
-
-                {/* Grid Size */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-gray-500 font-medium">Grid:</span>
-                  <select
-                    value={gridSize}
-                    onChange={(e) => setGridSize(Number(e.target.value))}
-                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value={5}>5px</option>
-                    <option value={10}>10px</option>
-                    <option value={20}>20px</option>
-                    <option value={25}>25px</option>
-                    <option value={50}>50px</option>
-                  </select>
-                </div>
-
-                <div className="w-px h-6 bg-gray-300"></div>
-
-                {/* Zoom */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setZoom(Math.max(50, zoom - 10))}
-                    className="w-6 h-6 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600 text-sm font-bold"
-                    title="Zoom out"
-                  >
-                    −
-                  </button>
-                  <span className="text-xs text-gray-600 font-medium w-12 text-center">{zoom}%</span>
-                  <button
-                    onClick={() => setZoom(Math.min(200, zoom + 10))}
-                    className="w-6 h-6 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600 text-sm font-bold"
-                    title="Zoom in"
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => setZoom(100)}
-                    className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-100 text-gray-600 font-medium"
-                    title="Reset zoom"
-                  >
-                    Reset
-                  </button>
-                </div>
-
-                <div className="w-px h-6 bg-gray-300"></div>
-
-                {/* Guides Toggle */}
-                <button
-                  onClick={() => setShowGuides(!showGuides)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
-                    showGuides
-                      ? "bg-purple-100 text-purple-700 border border-purple-300"
-                      : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
-                  }`}
-                  title="Kılavuz çizgileri göster/gizle"
-                >
-                  📏 Rehber
-                </button>
-
-                <div className="w-px h-6 bg-gray-300"></div>
-
-                {/* Info */}
-                <div className="flex items-center gap-3 text-xs text-gray-600">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold">Sayfa:</span>
-                    <span>{activePageId}</span>
-                  </div>
-                  {activeOverlay && (
-                    <div className="flex items-center gap-1.5 text-blue-600">
-                      <span className="font-semibold">Seçili:</span>
-                      <span>#{activeOverlay.substring(0, 8)}</span>
-                    </div>
-                  )}
-                </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="p-8 flex flex-col gap-8 items-center">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                id={`page-${page.id}`}
-                className={`relative transition-all ${
-                  !cleanView && page.id === activePageId
-                    ? "ring-4 ring-blue-400 ring-offset-4"
-                    : !cleanView && "hover:ring-2 hover:ring-gray-300 hover:ring-offset-2"
-                }`}
-                onClick={() => {
-                  if (!cleanView && page.id !== activePageId) {
-                    setActivePageId(page.id);
-                    setActiveOverlay(null);
-                    setInlineEditingId(null);
+                  // Aktif sayfa silindiyse, bir önceki sayfayı seç
+                  if (activePageId === pageId) {
+                    const currentIndex = pages.findIndex((p) => p.id === pageId);
+                    const newActivePage = pages[currentIndex - 1] || pages[currentIndex + 1];
+                    if (newActivePage) {
+                      setActivePageId(newActivePage.id);
+                    }
                   }
                 }}
-                style={{
-                  cursor: !cleanView && page.id !== activePageId ? "pointer" : "default",
-                }}
-              >
-                {/* Sayfa Numarası Etiketi (sadece edit modda) */}
-                {!cleanView && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-md border border-gray-200 text-xs font-semibold text-gray-700 z-50">
-                    Sayfa {page.id} • {page.mode === "document" ? "Belge" : "Serbest"}
-                  </div>
-                )}
+              />
+            )}
 
-                {/* Serbest Mod Canvas */}
-                {page.mode === "free" && (
-                  <PageCanvas
-                    overlays={page.overlays}
-                    images={page.images}
-                    tables={page.tables || []}
-                    pageSettings={page.pageSettings}
-                    activeOverlay={page.id === activePageId ? activeOverlay : null}
-                    setActiveOverlay={page.id === activePageId ? setActiveOverlay : () => {}}
-                    activePageId={page.id}
-                    onOverlayChange={handleOverlayChange}
-                    onImageChange={handleImageChange}
-                    onTableChange={handleTableChange}
-                    onRightClick={handleRightClick}
-                    onOverlayClick={page.id === activePageId ? handleOverlayClick : () => {}}
-                    onCellEdit={(tableId, row, col) => {
-                      if (page.id === activePageId) {
-                        setActiveTableCell({ tableId, row, col });
-                        setActiveTable(tableId);
-                      }
-                    }}
-                    inlineEditingId={page.id === activePageId ? inlineEditingId : null}
-                    setInlineEditingId={page.id === activePageId ? setInlineEditingId : () => {}}
-                    onEditorCreate={page.id === activePageId ? setCurrentEditor : () => {}}
+            {/* TÜM SAYFALAR - Scroll ile görünür */}
+            <div id="pages-scroll-container" className="flex-1 overflow-y-auto bg-gray-100">
+              {/* Sticky Toolbar - Belge Modu Kontrolleri */}
+              {!cleanView && activePage?.mode === "document" && currentEditor && (
+                <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
+                  <DocumentToolbar
+                    editor={currentEditor}
                     onOpenEquationEditor={handleOpenEquationEditor}
                     onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-                    presentationMode={page.id !== activePageId || cleanView}
-                    showGrid={showGrid}
-                    showGuides={showGuides}
-                    gridSize={gridSize}
-                    snapEnabled={snapEnabled}
-                    zoom={zoom}
                   />
-                )}
+                </div>
+              )}
 
-                {/* Belge Modu Editör */}
-                {page.mode === "document" && (
-                  <div className="bg-white shadow-2xl" style={{ overflow: "auto", maxWidth: '100%', maxHeight: '100%' }}>
-                    {/* Eğer import edilmiş PDF/Word ise (absolute positioning HTML içeriyorsa) */}
-                    {page.documentContent && page.documentContent.includes('position: absolute') ? (
-                      <PdfViewer htmlContent={page.documentContent} />
-                    ) : (
-                      // Normal TipTap editör - A4 boyutunda
-                      <div style={{ width: 794, height: 1123 }}>
-                        {page.id === activePageId ? (
-                          <DocumentEditor
-                            content={page.documentContent || ""}
-                            onChange={(newContent) => {
-                              setPages((prev) =>
-                                prev.map((p) =>
-                                  p.id === page.id
-                                    ? { ...p, documentContent: newContent }
-                                    : p
-                                )
-                              );
-                            }}
-                            onEditorReady={setCurrentEditor}
-                            articleSettings={articleSettings}
-                            onOpenEquationEditor={handleOpenEquationEditor}
-                            onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
-                          />
+              {/* Sticky Toolbar - Serbest Mod Kontrolleri */}
+              {!cleanView && activePage?.mode === "free" && currentEditor && (
+                <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
+                  <DocumentToolbar
+                    editor={currentEditor}
+                    onOpenEquationEditor={handleOpenEquationEditor}
+                    onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+                    showGridControls={true}
+                    showGrid={showGrid}
+                    setShowGrid={setShowGrid}
+                    snapEnabled={snapEnabled}
+                    setSnapEnabled={setSnapEnabled}
+                    gridSize={gridSize}
+                    setGridSize={setGridSize}
+                    zoom={zoom}
+                    setZoom={setZoom}
+                    showGuides={showGuides}
+                    setShowGuides={setShowGuides}
+                  />
+                </div>
+              )}
+
+              {/* Eski Custom Toolbar - Yedek */}
+              {!cleanView && activePage?.mode === "free" && false && (
+                <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
+                  <div className="flex items-center justify-between px-6 py-2 gap-4">
+                    {/* Sol Grup - Format Kontrolleri */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {/* Başlık Seçimi */}
+                      <div className="flex items-center gap-1">
+                        <select
+                          onMouseDown={(e) => e.preventDefault()}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (!currentEditor) return;
+                            if (value === "p") {
+                              currentEditor.chain().focus().setParagraph().run();
+                            } else if (value === "h1") {
+                              currentEditor.chain().focus().toggleHeading({ level: 1 }).run();
+                            } else if (value === "h2") {
+                              currentEditor.chain().focus().toggleHeading({ level: 2 }).run();
+                            } else if (value === "h3") {
+                              currentEditor.chain().focus().toggleHeading({ level: 3 }).run();
+                            }
+                          }}
+                          value={
+                            currentEditor?.isActive("heading", { level: 1 })
+                              ? "h1"
+                              : currentEditor?.isActive("heading", { level: 2 })
+                                ? "h2"
+                                : currentEditor?.isActive("heading", { level: 3 })
+                                  ? "h3"
+                                  : "p"
+                          }
+                          disabled={!currentEditor || !activeOverlay}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Metin Stili"
+                        >
+                          <option value="p">Normal</option>
+                          <option value="h1">Başlık 1</option>
+                          <option value="h2">Başlık 2</option>
+                          <option value="h3">Başlık 3</option>
+                        </select>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Text Formatting */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().toggleBold().run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('bold') ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="Kalın (Ctrl+B)"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+                            <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+                          </svg>
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().toggleItalic().run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('italic') ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="İtalik (Ctrl+I)"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="19" y1="4" x2="10" y2="4"></line>
+                            <line x1="14" y1="20" x2="5" y2="20"></line>
+                            <line x1="15" y1="4" x2="9" y2="20"></line>
+                          </svg>
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().toggleUnderline().run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('underline') ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="Altı Çizili (Ctrl+U)"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"></path>
+                            <line x1="4" y1="21" x2="20" y2="21"></line>
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Text Align */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().setTextAlign('left').run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'left' }) ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="Sola Hizala"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="17" y1="10" x2="3" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="17" y1="18" x2="3" y2="18"></line>
+                          </svg>
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().setTextAlign('center').run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'center' }) ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="Ortala"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="10" x2="6" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="18" y1="18" x2="6" y2="18"></line>
+                          </svg>
+                        </button>
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().setTextAlign('right').run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive({ textAlign: 'right' }) ? 'bg-blue-100 text-blue-600' : ''}`}
+                          title="Sağa Hizala"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="21" y1="10" x2="7" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="21" y1="18" x2="7" y2="18"></line>
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Font Size & Color */}
+                      <div className="flex items-center gap-1">
+                        <select
+                          onMouseDown={(e) => e.preventDefault()}
+                          value={currentEditor?.getAttributes('textStyle').fontSize || '16px'}
+                          onChange={(e) => currentEditor?.chain().focus().setFontSize(e.target.value).run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Yazı Boyutu"
+                        >
+                          <option value="12px">12px</option>
+                          <option value="14px">14px</option>
+                          <option value="16px">16px</option>
+                          <option value="18px">18px</option>
+                          <option value="20px">20px</option>
+                          <option value="24px">24px</option>
+                          <option value="28px">28px</option>
+                          <option value="32px">32px</option>
+                        </select>
+
+                        <input
+                          type="color"
+                          onMouseDown={(e) => e.preventDefault()}
+                          value={currentEditor?.getAttributes('textStyle').color || '#000000'}
+                          onChange={(e) => currentEditor?.chain().focus().setColor(e.target.value).run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className="w-8 h-8 border border-gray-300 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Yazı Rengi"
+                        />
+
+                        <input
+                          type="color"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onChange={(e) => currentEditor?.chain().focus().setHighlight({ color: e.target.value }).run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          defaultValue="#FFFF00"
+                          className="w-8 h-8 border border-gray-300 rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Vurgu Rengi"
+                        />
+
+                        <button
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => currentEditor?.chain().focus().toggleHighlight().run()}
+                          disabled={!currentEditor || !activeOverlay}
+                          className={`px-2 py-1.5 rounded text-xs transition-all ${!currentEditor || !activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} ${currentEditor?.isActive('highlight') ? 'bg-yellow-100 text-yellow-700' : ''}`}
+                          title="Vurgula"
+                        >
+                          🖍 Vurgu
+                        </button>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Math */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={handleOpenEquationEditor}
+                          disabled={!activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-purple-50'} text-purple-600`}
+                          title="Denklem Ekle"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={handleOpenMathSymbolPanel}
+                          disabled={!activeOverlay}
+                          className={`p-1.5 rounded transition-all ${!activeOverlay ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-50'} text-indigo-600`}
+                          title="Sembol Ekle"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                            <path d="M2 2l7.586 7.586"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sağ Grup - Grid/Snap/Zoom Kontrolleri */}
+                    <div className="flex items-center gap-2">
+                      {/* Grid Toggle */}
+                      <button
+                        onClick={() => setShowGrid(!showGrid)}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${showGrid
+                          ? "bg-blue-100 text-blue-700 border border-blue-300"
+                          : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                          }`}
+                        title="Grid göster/gizle"
+                      >
+                        ⌘ Grid
+                      </button>
+
+                      {/* Snap Toggle */}
+                      <button
+                        onClick={() => setSnapEnabled(!snapEnabled)}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${snapEnabled
+                          ? "bg-green-100 text-green-700 border border-green-300"
+                          : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                          }`}
+                        title="Grid'e yapışmayı aç/kapat"
+                      >
+                        🧲 Snap
+                      </button>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Grid Size */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 font-medium">Grid:</span>
+                        <select
+                          value={gridSize}
+                          onChange={(e) => setGridSize(Number(e.target.value))}
+                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        >
+                          <option value={5}>5px</option>
+                          <option value={10}>10px</option>
+                          <option value={20}>20px</option>
+                          <option value={25}>25px</option>
+                          <option value={50}>50px</option>
+                        </select>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Zoom */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setZoom(Math.max(50, zoom - 10))}
+                          className="w-6 h-6 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600 text-sm font-bold"
+                          title="Zoom out"
+                        >
+                          −
+                        </button>
+                        <span className="text-xs text-gray-600 font-medium w-12 text-center">{zoom}%</span>
+                        <button
+                          onClick={() => setZoom(Math.min(200, zoom + 10))}
+                          className="w-6 h-6 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-100 text-gray-600 text-sm font-bold"
+                          title="Zoom in"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => setZoom(100)}
+                          className="px-2 py-1 text-xs rounded border border-gray-300 hover:bg-gray-100 text-gray-600 font-medium"
+                          title="Reset zoom"
+                        >
+                          Reset
+                        </button>
+                      </div>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Guides Toggle */}
+                      <button
+                        onClick={() => setShowGuides(!showGuides)}
+                        className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${showGuides
+                          ? "bg-purple-100 text-purple-700 border border-purple-300"
+                          : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100"
+                          }`}
+                        title="Kılavuz çizgileri göster/gizle"
+                      >
+                        📏 Rehber
+                      </button>
+
+                      <div className="w-px h-6 bg-gray-300"></div>
+
+                      {/* Info */}
+                      <div className="flex items-center gap-3 text-xs text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold">Sayfa:</span>
+                          <span>{activePageId}</span>
+                        </div>
+                        {activeOverlay && (
+                          <div className="flex items-center gap-1.5 text-blue-600">
+                            <span className="font-semibold">Seçili:</span>
+                            <span>#{activeOverlay.substring(0, 8)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-8 flex flex-col gap-8 items-center">
+                {pages.map((page) => (
+                  <div
+                    key={page.id}
+                    id={`page-${page.id}`}
+                    className={`relative transition-all ${!cleanView && page.id === activePageId
+                      ? "ring-4 ring-blue-400 ring-offset-4"
+                      : !cleanView && "hover:ring-2 hover:ring-gray-300 hover:ring-offset-2"
+                      }`}
+                    onClick={() => {
+                      if (!cleanView && page.id !== activePageId) {
+                        setActivePageId(page.id);
+                        setActiveOverlay(null);
+                        setInlineEditingId(null);
+                      }
+                    }}
+                    style={{
+                      cursor: !cleanView && page.id !== activePageId ? "pointer" : "default",
+                    }}
+                  >
+                    {/* Sayfa Numarası Etiketi (sadece edit modda) */}
+                    {!cleanView && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-md border border-gray-200 text-xs font-semibold text-gray-700 z-50">
+                        Sayfa {page.id} • {page.mode === "document" ? "Belge" : "Serbest"}
+                      </div>
+                    )}
+
+                    {/* Serbest Mod Canvas */}
+                    {page.mode === "free" && (
+                      <PageCanvas
+                        overlays={page.overlays}
+                        images={page.images}
+                        tables={page.tables || []}
+                        pageSettings={page.pageSettings}
+                        activeOverlay={page.id === activePageId ? activeOverlay : null}
+                        setActiveOverlay={page.id === activePageId ? setActiveOverlay : () => { }}
+                        activePageId={page.id}
+                        onOverlayChange={handleOverlayChange}
+                        onImageChange={handleImageChange}
+                        onTableChange={handleTableChange}
+                        onRightClick={handleRightClick}
+                        onOverlayClick={page.id === activePageId ? handleOverlayClick : () => { }}
+                        onCellEdit={(tableId, row, col) => {
+                          if (page.id === activePageId) {
+                            setActiveTableCell({ tableId, row, col });
+                            setActiveTable(tableId);
+                          }
+                        }}
+                        inlineEditingId={page.id === activePageId ? inlineEditingId : null}
+                        setInlineEditingId={page.id === activePageId ? setInlineEditingId : () => { }}
+                        onEditorCreate={page.id === activePageId ? setCurrentEditor : () => { }}
+                        onOpenEquationEditor={handleOpenEquationEditor}
+                        onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+                        presentationMode={page.id !== activePageId || cleanView}
+                        showGrid={showGrid}
+                        showGuides={showGuides}
+                        gridSize={gridSize}
+                        snapEnabled={snapEnabled}
+                        zoom={zoom}
+                      />
+                    )}
+
+                    {/* Belge Modu Editör */}
+                    {page.mode === "document" && (
+                      <div className="bg-white shadow-2xl" style={{ overflow: "auto", maxWidth: '100%', maxHeight: '100%' }}>
+                        {/* Eğer import edilmiş PDF/Word ise (absolute positioning HTML içeriyorsa) */}
+                        {page.documentContent && page.documentContent.includes('position: absolute') ? (
+                          <PdfViewer htmlContent={page.documentContent} />
                         ) : (
-                          <div 
-                            className="w-full h-full p-16 overflow-hidden"
-                            dangerouslySetInnerHTML={{ __html: page.documentContent || "<p>Boş sayfa</p>" }}
-                            style={{
-                              fontSize: `${articleSettings.bodyFontSize}px`,
-                              lineHeight: articleSettings.bodyLineHeight,
-                              color: articleSettings.bodyColor,
-                            }}
-                          />
+                          // Normal TipTap editör - A4 boyutunda
+                          <div style={{ width: 794, height: 1123 }}>
+                            {page.id === activePageId ? (
+                              <DocumentEditor
+                                content={page.documentContent || ""}
+                                onChange={(newContent) => {
+                                  setPages((prev) =>
+                                    prev.map((p) =>
+                                      p.id === page.id
+                                        ? { ...p, documentContent: newContent }
+                                        : p
+                                    )
+                                  );
+                                }}
+                                onEditorReady={setCurrentEditor}
+                                articleSettings={articleSettings}
+                                onOpenEquationEditor={handleOpenEquationEditor}
+                                onOpenMathSymbolPanel={handleOpenMathSymbolPanel}
+                              />
+                            ) : (
+                              <div
+                                className="w-full h-full p-16 overflow-hidden"
+                                dangerouslySetInnerHTML={{ __html: page.documentContent || "<p>Boş sayfa</p>" }}
+                                style={{
+                                  fontSize: `${articleSettings.bodyFontSize}px`,
+                                  lineHeight: articleSettings.bodyLineHeight,
+                                  color: articleSettings.bodyColor,
+                                }}
+                              />
+                            )}
+                          </div>
                         )}
                       </div>
                     )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* SAĞ MAKALE AYARLARI PANELİ - Her zaman göster (temiz görünüm hariç) */}
-        {!cleanView && (
-          <ArticleSettingsPanel
-            settings={articleSettings}
-            onSettingsChange={handleArticleSettingsChange}
-          />
-        )}
-      </div>
-
-      {/* SAĞ TIK MENÜ - Temiz görünümde gizli */}
-      {!cleanView && contextMenu.visible && (
-        <div
-          style={{
-            position: 'fixed',
-            top: contextMenu.y,
-            left: contextMenu.x,
-            zIndex: 10000,
-            background: 'white',
-            border: '1px solid #d1d5db',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            padding: '4px',
-            minWidth: '200px',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {contextMenu.targetType === 'table' ? (
-            // TABLO İÇİN ÖZEL MENÜ
-            <>
-              <button
-                onClick={addTableRowBefore}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>⬆️</span>
-                <span>Üste Satır Ekle</span>
-              </button>
-
-              <button
-                onClick={addTableRow}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>⬇️</span>
-                <span>Alta Satır Ekle</span>
-              </button>
-
-              <button
-                onClick={deleteTableRow}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#dc2626',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🗑️</span>
-                <span>Satır Sil</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={addTableColumnBefore}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>⬅️</span>
-                <span>Sola Sütun Ekle</span>
-              </button>
-
-              <button
-                onClick={addTableColumn}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>➡️</span>
-                <span>Sağa Sütun Ekle</span>
-              </button>
-
-              <button
-                onClick={deleteTableColumn}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#dc2626',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🗑️</span>
-                <span>Sütun Sil</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={mergeTableCells}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#059669',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🔗</span>
-                <span>Hücreleri Birleştir</span>
-              </button>
-
-              <button
-                onClick={splitTableCell}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#059669',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>✂️</span>
-                <span>Hücreyi Böl</span>
-              </button>
-
-              <button
-                onClick={toggleTableHeaderRow}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#059669',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>📋</span>
-                <span>Başlık Satırını Aç/Kapat</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <div style={{ padding: '8px 12px' }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Hücre Arka Plan Rengi</div>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                  {['#ffffff', '#f3f4f6', '#fee2e2', '#fef3c7', '#d1fae5', '#dbeafe', '#e0e7ff', '#fce7f3'].map(color => (
-                    <button
-                      key={color}
-                      onClick={() => changeTableCellColor(color, true)}
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '4px',
-                        border: '1px solid #d1d5db',
-                        backgroundColor: color,
-                        cursor: 'pointer',
-                      }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ padding: '0 12px 8px 12px' }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Yazı Rengi</div>
-                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                  {['#000000', '#374151', '#dc2626', '#ea580c', '#059669', '#2563eb', '#7c3aed', '#db2777'].map(color => (
-                    <button
-                      key={color}
-                      onClick={() => changeTableCellColor(color, false)}
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '4px',
-                        border: '1px solid #d1d5db',
-                        backgroundColor: color,
-                        cursor: 'pointer',
-                      }}
-                      title={color}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  setContextMenu((prev) => ({ ...prev, visible: false }));
-                  handleOpenEquationEditor();
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#7c3aed',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>∑</span>
-                <span>Denklem Ekle</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setContextMenu((prev) => ({ ...prev, visible: false }));
-                  handleOpenMathSymbolPanel();
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#7c3aed',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>π</span>
-                <span>Sembol Ekle</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={deleteOverlay}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#dc2626',
-                  fontWeight: '600',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🗑️</span>
-                <span>Tabloyu Sil</span>
-              </button>
-            </>
-          ) : (
-            // NORMAL OVERLAY MENÜ (TEXT/IMAGE)
-            <>
-              <button
-                onClick={() => {
-                  if (!contextMenu.targetId) return;
-                  setActiveOverlay(contextMenu.targetId);
-                  setInlineEditingId(contextMenu.targetId);
-                  setContextMenu((prev) => ({ ...prev, visible: false }));
-                }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>✏️</span>
-                <span>Düzenle</span>
-              </button>
-
-              <button
-                onClick={bringToFront}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>⬆️</span>
-                <span>Öne Getir</span>
-              </button>
-
-              <button
-                onClick={sendToBack}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>⬇️</span>
-                <span>Arkaya Gönder</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={copyStyle}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#2563eb',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>📋</span>
-                <span>Stili Kopyala</span>
-              </button>
-
-              <button
-                onClick={pasteStyle}
-                disabled={!clipboard.style}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: clipboard.style ? 'pointer' : 'not-allowed',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: clipboard.style ? '#2563eb' : '#9ca3af',
-                }}
-                title={!clipboard.style ? "Stili kopya etmek için ilk önce 'Stili Kopyala' yapınız" : ""}
-                onMouseOver={(e) => {
-                  if (clipboard.style) e.currentTarget.style.background = '#eff6ff';
-                }}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>📝</span>
-                <span>Stili Yapıştır</span>
-              </button>
-
-              <button
-                onClick={copyFormat}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#059669',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>📏</span>
-                <span>Biçimi Kopyala</span>
-              </button>
-
-              <button
-                onClick={pasteFormat}
-                disabled={!clipboard.format}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: clipboard.format ? 'pointer' : 'not-allowed',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: clipboard.format ? '#059669' : '#9ca3af',
-                }}
-                title={!clipboard.format ? "Biçimi kopya etmek için ilk önce 'Biçimi Kopyala' yapınız" : ""}
-                onMouseOver={(e) => {
-                  if (clipboard.format) e.currentTarget.style.background = '#d1fae5';
-                }}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🔧</span>
-                <span>Biçimi Yapıştır</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={addImageToSelectedArea}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#7c3aed',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🖼️</span>
-                <span>Görsel Ekle</span>
-              </button>
-
-              <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
-
-              <button
-                onClick={deleteOverlay}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  textAlign: 'left',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#dc2626',
-                  fontWeight: '600',
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span>🗑️</span>
-                <span>Sil</span>
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* TABLO GİRİŞ MODALİ */}
-      {showTableModal && (
-        <TableInputModal
-          isOpen={showTableModal}
-          onClose={() => setShowTableModal(false)}
-          onInsert={handleInsertTable}
-        />
-      )}
-
-      {/* MATEMATİK EDITÖR MODALİ */}
-      {showEquationEditor && (
-        <EquationEditorModal
-          onClose={() => setShowEquationEditor(false)}
-          onInsert={handleInsertEquation}
-        />
-      )}
-
-      {/* MATEMATİK SEMBOL PANELİ */}
-      {showMathSymbolPanel && (
-        <MathSymbolPanel
-          onInsert={handleInsertSymbol}
-          onClose={() => setShowMathSymbolPanel(false)}
-        />
-      )}
-
-      {/* DENKLEM ŞABLONLARI PANELİ */}
-      {showEquationTemplatesPanel && (
-        <EquationTemplatesPanel
-          onInsert={(latex) => handleInsertEquation(latex, "block")}
-          onClose={() => setShowEquationTemplatesPanel(false)}
-        />
-      )}
-
-      {/* SAYFA ŞABLONU SEÇİM MODALI */}
-      {showTemplateModal && (
-        <PageTemplateModal
-          isOpen={showTemplateModal}
-          onClose={() => setShowTemplateModal(false)}
-          onSelectTemplate={(templateKey) => addPage(templateKey)}
-        />
-      )}
-
-      {/* YAZAR BİLGİLERİ MODALI */}
-      {showAuthorModal && (
-        <AuthorInputModal
-          isOpen={showAuthorModal}
-          onClose={() => setShowAuthorModal(false)}
-          onSave={handleSaveAuthors}
-          initialAuthors={authors}
-        />
-      )}
-
-      {/* KURUM BİLGİLERİ MODALI */}
-      {showInstitutionModal && (
-        <InstitutionInputModal
-          isOpen={showInstitutionModal}
-          onClose={() => setShowInstitutionModal(false)}
-          onSave={handleSaveInstitutions}
-          initialInstitutions={institutions}
-        />
-      )}
-
-      {/* İLETİŞİM BİLGİLERİ MODALI */}
-      {showContactModal && (
-        <ContactInputModal
-          isOpen={showContactModal}
-          onClose={() => setShowContactModal(false)}
-          onSave={handleSaveContacts}
-          initialContacts={contacts}
-        />
-      )}
-
-      {/* WORD DOSYA YÜKLEME MODALI */}
-      <WordDocumentModal
-        isOpen={showWordDocumentModal}
-        onClose={() => setShowWordDocumentModal(false)}
-        onDocumentLoaded={(result) => {
-          // Content'i set et
-          setWordDocumentContent(result.html);
-          // Editor'u aç
-          setShowWordEditor(true);
-          // Modal'ı kapat
-          setShowWordDocumentModal(false);
-          console.log('✅ Word belge yüklendi:', result.fileName);
-          console.log('📝 Editor açılıyor...');
-        }}
-        title="Word Dosyası Yükle"
-        showStats={true}
-        showElements={true}
-      />
-
-      {/* WORD DOCUMENT EDITOR */}
-      {showWordEditor && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.3)',
-          zIndex: 9998,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '8px',
-            width: '95%',
-            height: '95vh',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid #e0e0e0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <h3 style={{ margin: 0 }}>Word Belge Editörü</h3>
-              <button
-                onClick={() => setShowWordEditor(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  cursor: 'pointer'
-                }}
-              >
-                ✕
-              </button>
             </div>
-            <div style={{ flex: 1, overflow: 'auto' }}>
-              <WordDocumentEditor
-                initialContent={wordDocumentContent}
-                fileName={wordDocumentFileName}
-                onContentChange={(html) => {
-                  setWordDocumentContent(html);
-                  console.log('📝 İçerik güncellendi');
-                }}
-                readOnly={false}
-                autoSave={true}
-                onFileLoaded={(result) => {
-                  setWordDocumentContent(result.html);
-                  console.log('📄 Yeni dosya yüklendi:', result.fileName);
-                }}
-                onError={(error) => {
-                  console.error('❌ Hata:', error);
-                  alert('Hata: ' + error.message);
-                }}
+
+            {/* SAĞ MAKALE AYARLARI PANELİ - Her zaman göster (temiz görünüm hariç) */}
+            {!cleanView && (
+              <ArticleSettingsPanel
+                settings={articleSettings}
+                onSettingsChange={handleArticleSettingsChange}
               />
-            </div>
+            )}
           </div>
-        </div>
-      )}
-      </>
+
+          {/* SAĞ TIK MENÜ - Temiz görünümde gizli */}
+          {!cleanView && contextMenu.visible && (
+            <div
+              style={{
+                position: 'fixed',
+                top: contextMenu.y,
+                left: contextMenu.x,
+                zIndex: 10000,
+                background: 'white',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                padding: '4px',
+                minWidth: '200px',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {contextMenu.targetType === 'table' ? (
+                // TABLO İÇİN ÖZEL MENÜ
+                <>
+                  <button
+                    onClick={addTableRowBefore}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>⬆️</span>
+                    <span>Üste Satır Ekle</span>
+                  </button>
+
+                  <button
+                    onClick={addTableRow}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>⬇️</span>
+                    <span>Alta Satır Ekle</span>
+                  </button>
+
+                  <button
+                    onClick={deleteTableRow}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#dc2626',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🗑️</span>
+                    <span>Satır Sil</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={addTableColumnBefore}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>⬅️</span>
+                    <span>Sola Sütun Ekle</span>
+                  </button>
+
+                  <button
+                    onClick={addTableColumn}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>➡️</span>
+                    <span>Sağa Sütun Ekle</span>
+                  </button>
+
+                  <button
+                    onClick={deleteTableColumn}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#dc2626',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🗑️</span>
+                    <span>Sütun Sil</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={mergeTableCells}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#059669',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🔗</span>
+                    <span>Hücreleri Birleştir</span>
+                  </button>
+
+                  <button
+                    onClick={splitTableCell}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#059669',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>✂️</span>
+                    <span>Hücreyi Böl</span>
+                  </button>
+
+                  <button
+                    onClick={toggleTableHeaderRow}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#059669',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>📋</span>
+                    <span>Başlık Satırını Aç/Kapat</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <div style={{ padding: '8px 12px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Hücre Arka Plan Rengi</div>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {['#ffffff', '#f3f4f6', '#fee2e2', '#fef3c7', '#d1fae5', '#dbeafe', '#e0e7ff', '#fce7f3'].map(color => (
+                        <button
+                          key={color}
+                          onClick={() => changeTableCellColor(color, true)}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: color,
+                            cursor: 'pointer',
+                          }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0 12px 8px 12px' }}>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>Yazı Rengi</div>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                      {['#000000', '#374151', '#dc2626', '#ea580c', '#059669', '#2563eb', '#7c3aed', '#db2777'].map(color => (
+                        <button
+                          key={color}
+                          onClick={() => changeTableCellColor(color, false)}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '4px',
+                            border: '1px solid #d1d5db',
+                            backgroundColor: color,
+                            cursor: 'pointer',
+                          }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setContextMenu((prev) => ({ ...prev, visible: false }));
+                      handleOpenEquationEditor();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#7c3aed',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>∑</span>
+                    <span>Denklem Ekle</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setContextMenu((prev) => ({ ...prev, visible: false }));
+                      handleOpenMathSymbolPanel();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#7c3aed',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>π</span>
+                    <span>Sembol Ekle</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={deleteOverlay}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#dc2626',
+                      fontWeight: '600',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🗑️</span>
+                    <span>Tabloyu Sil</span>
+                  </button>
+                </>
+              ) : (
+                // NORMAL OVERLAY MENÜ (TEXT/IMAGE)
+                <>
+                  <button
+                    onClick={() => {
+                      if (!contextMenu.targetId) return;
+                      setActiveOverlay(contextMenu.targetId);
+                      setInlineEditingId(contextMenu.targetId);
+                      setContextMenu((prev) => ({ ...prev, visible: false }));
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>✏️</span>
+                    <span>Düzenle</span>
+                  </button>
+
+                  <button
+                    onClick={bringToFront}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>⬆️</span>
+                    <span>Öne Getir</span>
+                  </button>
+
+                  <button
+                    onClick={sendToBack}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>⬇️</span>
+                    <span>Arkaya Gönder</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={copyStyle}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#2563eb',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#eff6ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>📋</span>
+                    <span>Stili Kopyala</span>
+                  </button>
+
+                  <button
+                    onClick={pasteStyle}
+                    disabled={!clipboard.style}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: clipboard.style ? 'pointer' : 'not-allowed',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: clipboard.style ? '#2563eb' : '#9ca3af',
+                    }}
+                    title={!clipboard.style ? "Stili kopya etmek için ilk önce 'Stili Kopyala' yapınız" : ""}
+                    onMouseOver={(e) => {
+                      if (clipboard.style) e.currentTarget.style.background = '#eff6ff';
+                    }}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>📝</span>
+                    <span>Stili Yapıştır</span>
+                  </button>
+
+                  <button
+                    onClick={copyFormat}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#059669',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#d1fae5'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>📏</span>
+                    <span>Biçimi Kopyala</span>
+                  </button>
+
+                  <button
+                    onClick={pasteFormat}
+                    disabled={!clipboard.format}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: clipboard.format ? 'pointer' : 'not-allowed',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: clipboard.format ? '#059669' : '#9ca3af',
+                    }}
+                    title={!clipboard.format ? "Biçimi kopya etmek için ilk önce 'Biçimi Kopyala' yapınız" : ""}
+                    onMouseOver={(e) => {
+                      if (clipboard.format) e.currentTarget.style.background = '#d1fae5';
+                    }}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🔧</span>
+                    <span>Biçimi Yapıştır</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={addImageToSelectedArea}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#7c3aed',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#f3e8ff'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🖼️</span>
+                    <span>Görsel Ekle</span>
+                  </button>
+
+                  <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
+
+                  <button
+                    onClick={deleteOverlay}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#dc2626',
+                      fontWeight: '600',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                  >
+                    <span>🗑️</span>
+                    <span>Sil</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* TABLO GİRİŞ MODALİ */}
+          {showTableModal && (
+            <TableStyleModal
+              isOpen={showTableModal}
+              onClose={() => setShowTableModal(false)}
+              onSelect={handleInsertTable}
+            />
+          )}
+
+          {/* MATEMATİK EDITÖR MODALİ */}
+          {showEquationEditor && (
+            <EquationEditorModal
+              onClose={() => setShowEquationEditor(false)}
+              onInsert={handleInsertEquation}
+            />
+          )}
+
+          {/* MATEMATİK SEMBOL PANELİ */}
+          {showMathSymbolPanel && (
+            <MathSymbolPanel
+              onInsert={handleInsertSymbol}
+              onClose={() => setShowMathSymbolPanel(false)}
+            />
+          )}
+
+          {/* DENKLEM ŞABLONLARI PANELİ */}
+          {showEquationTemplatesPanel && (
+            <EquationTemplatesPanel
+              onInsert={(latex) => handleInsertEquation(latex, "block")}
+              onClose={() => setShowEquationTemplatesPanel(false)}
+            />
+          )}
+
+          {/* SAYFA ŞABLONU SEÇİM MODALI */}
+          {showTemplateModal && (
+            <PageTemplateModal
+              isOpen={showTemplateModal}
+              onClose={() => setShowTemplateModal(false)}
+              onSelectTemplate={(templateKey) => addPage(templateKey)}
+            />
+          )}
+
+          {/* YAZAR BİLGİLERİ MODALI */}
+          {showAuthorModal && (
+            <AuthorInputModal
+              isOpen={showAuthorModal}
+              onClose={() => setShowAuthorModal(false)}
+              onSave={handleSaveAuthors}
+              initialAuthors={authors}
+            />
+          )}
+
+          {/* KURUM BİLGİLERİ MODALI */}
+          {showInstitutionModal && (
+            <InstitutionInputModal
+              isOpen={showInstitutionModal}
+              onClose={() => setShowInstitutionModal(false)}
+              onSave={handleSaveInstitutions}
+              initialInstitutions={institutions}
+            />
+          )}
+
+          {/* İLETİŞİM BİLGİLERİ MODALI */}
+          {showContactModal && (
+            <ContactInputModal
+              isOpen={showContactModal}
+              onClose={() => setShowContactModal(false)}
+              onSave={handleSaveContacts}
+              initialContacts={contacts}
+            />
+          )}
+
+          {/* WORD DOSYA YÜKLEME MODALI */}
+          <WordDocumentModal
+            isOpen={showWordDocumentModal}
+            onClose={() => setShowWordDocumentModal(false)}
+            onDocumentLoaded={(result) => {
+              // Content'i set et
+              setWordDocumentContent(result.html);
+              // Editor'u aç
+              setShowWordEditor(true);
+              // Modal'ı kapat
+              setShowWordDocumentModal(false);
+              console.log('✅ Word belge yüklendi:', result.fileName);
+              console.log('📝 Editor açılıyor...');
+            }}
+            title="Word Dosyası Yükle"
+            showStats={true}
+            showElements={true}
+          />
+
+          {/* WORD DOCUMENT EDITOR */}
+          {showWordEditor && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.3)',
+              zIndex: 9998,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                background: 'white',
+                borderRadius: '8px',
+                width: '95%',
+                height: '95vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{
+                  padding: '12px 16px',
+                  borderBottom: '1px solid #e0e0e0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <h3 style={{ margin: 0 }}>Word Belge Editörü</h3>
+                  <button
+                    onClick={() => setShowWordEditor(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '20px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                  <WordDocumentEditor
+                    initialContent={wordDocumentContent}
+                    fileName={wordDocumentFileName}
+                    onContentChange={(html) => {
+                      setWordDocumentContent(html);
+                      console.log('📝 İçerik güncellendi');
+                    }}
+                    readOnly={false}
+                    autoSave={true}
+                    onFileLoaded={(result) => {
+                      setWordDocumentContent(result.html);
+                      console.log('📄 Yeni dosya yüklendi:', result.fileName);
+                    }}
+                    onError={(error) => {
+                      console.error('❌ Hata:', error);
+                      alert('Hata: ' + error.message);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PROJE KODU MODAL */}
+          {showProjectCodeModal && projectCode && (
+            <ProjectCodeModal
+              code={projectCode}
+              onClose={() => setShowProjectCodeModal(false)}
+            />
+          )}
+        </>
       )}
     </div>
   );

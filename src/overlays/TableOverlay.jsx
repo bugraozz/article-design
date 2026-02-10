@@ -12,6 +12,7 @@ export default function TableOverlay({
   data = [],
   mergedCells = {}, // { "0-0": { colspan: 2, rowspan: 1 } }
   cellStyles = {}, // { "0-0": { backgroundColor: "#fff", color: "#000" } }
+  tableStyle = {}, // Table-level styles from style template
   isActive,
   onClick,
   onRightClick,
@@ -121,10 +122,6 @@ export default function TableOverlay({
     if (!isDragging && !isResizing) return;
 
     const handleMouseMove = (e) => {
-      const now = Date.now();
-      if (now - lastUpdateRef.current < UPDATE_THRESHOLD) return;
-      lastUpdateRef.current = now;
-
       if (isDragging) {
         let newX = e.clientX - dragOffset.x;
         let newY = e.clientY - dragOffset.y;
@@ -140,24 +137,34 @@ export default function TableOverlay({
         const deltaX = e.clientX - dragOffset.x;
         const deltaY = e.clientY - dragOffset.y;
 
-        const newSize = { ...currentSize };
+        let newSize = { ...currentSize };
+        let updates = {};
 
-        if (resizeDir.includes("e")) newSize.width = Math.max(150, currentSize.width + deltaX);
-        if (resizeDir.includes("s")) newSize.height = Math.max(100, currentSize.height + deltaY);
+        if (resizeDir.includes("e")) {
+          newSize.width = Math.max(150, currentSize.width + deltaX);
+          updates.width = newSize.width;
+        }
+        if (resizeDir.includes("s")) {
+          newSize.height = Math.max(100, currentSize.height + deltaY);
+          updates.height = newSize.height;
+        }
         if (resizeDir.includes("w")) {
           const newW = Math.max(150, currentSize.width - deltaX);
-          const diff = newW - currentSize.width;
-          onPositionChange?.(id, { x: x + diff });
+          updates.x = x - (newW - currentSize.width);
+          updates.width = newW;
           newSize.width = newW;
         }
         if (resizeDir.includes("n")) {
           const newH = Math.max(100, currentSize.height - deltaY);
-          const diff = newH - currentSize.height;
-          onPositionChange?.(id, { y: y + diff });
+          updates.y = y - (newH - currentSize.height);
+          updates.height = newH;
           newSize.height = newH;
         }
 
         setCurrentSize(newSize);
+        if (Object.keys(updates).length > 0) {
+          onPositionChange?.(id, updates);
+        }
         setDragOffset({ x: e.clientX, y: e.clientY });
       }
     };
@@ -234,12 +241,6 @@ export default function TableOverlay({
         height: currentSize.height,
         pointerEvents: "auto",
         cursor: isDragging ? "grabbing" : isActive && !isEditingCell ? "grab" : "default",
-        background: "white",
-        boxSizing: "border-box",
-        boxShadow: isActive 
-          ? "0 0 0 2px #3b82f6" 
-          : "0 1px 3px rgba(0,0,0,0.1)",
-        overflow: "hidden",
       }}
       onMouseDown={handleMouseDown}
       onClick={(e) => {
@@ -253,15 +254,26 @@ export default function TableOverlay({
         onRightClick?.(id, { x: e.clientX, y: e.clientY }, 'table', selectedCells);
       }}
     >
-      <table
-        className="free-mode-table"
+      <div 
+        className="tableWrapper"
         style={{
           width: "100%",
           height: "100%",
-          borderCollapse: "collapse",
-          tableLayout: "fixed",
+          overflow: "auto",
         }}
       >
+        <table
+          className="word-table"
+          style={{
+            width: "100%",
+            borderCollapse: tableStyle?.borderCollapse || "collapse",
+            tableLayout: "fixed",
+            margin: 0,
+            border: tableStyle?.border || "solid #000000 0.5pt",
+            fontFamily: tableStyle?.fontFamily || "Calibri, sans-serif",
+            fontSize: tableStyle?.fontSize || "11pt",
+          }}
+        >
         <tbody>
           {tableData.map((row, rowIdx) => (
             <tr key={rowIdx}>
@@ -293,12 +305,8 @@ export default function TableOverlay({
                 const cellMerge = mergedCells[cellKey] || {};
                 const colspan = cellMerge.colspan || 1;
                 const rowspan = cellMerge.rowspan || 1;
+                // Word cellStyles kullan
                 const cellStyle = cellStyles[cellKey] || {};
-                
-                // Debug: Hücre stili kontrolü
-                if (cellStyles[cellKey]) {
-                  console.log(`Hücre ${cellKey} için stil uygulanıyor:`, cellStyle);
-                }
 
                 const handleCellClick = (e) => {
                   if (e.ctrlKey || e.metaKey) {
@@ -325,19 +333,17 @@ export default function TableOverlay({
                     onClick={handleCellClick}
                     onDoubleClick={() => handleCellDoubleClick(rowIdx, colIdx)}
                     style={{
-                      border: "1px solid #ddd",
-                      padding: "8px 12px",
-                      backgroundColor: cellStyle.backgroundColor || "#f5f5f5",
-                      color: cellStyle.color || "#000",
-                      fontWeight: "600",
-                      textAlign: "left",
-                      fontSize: "14px",
-                      position: "relative",
+                      border: cellStyle.border || "solid #000000 0.5pt",
+                      borderBottom: cellStyle.borderBottom || cellStyle.border || "solid #000000 0.5pt",
+                      padding: cellStyle.padding || "0cm 5.4pt",
+                      verticalAlign: cellStyle.verticalAlign || "top",
+                      backgroundColor: cellStyle.backgroundColor || "#ffffff",
+                      color: cellStyle.color || "#000000",
+                      fontWeight: cellStyle.fontWeight || "normal",
+                      textAlign: cellStyle.textAlign || "left",
                       cursor: "pointer",
-                      boxShadow: isSelected ? "inset 0 0 0 2px #3b82f6" : "none",
-                      userSelect: "none",
-                      verticalAlign: "top",
-                      minWidth: "50px",
+                      outline: isSelected ? "2px solid #3b82f6" : "none",
+                      outlineOffset: isSelected ? "-1px" : "0",
                     }}
                   >
                     {isEditing ? (
@@ -374,20 +380,18 @@ export default function TableOverlay({
                     rowSpan={rowspan}
                     onClick={handleCellClick}
                     onDoubleClick={() => handleCellDoubleClick(rowIdx, colIdx)}
+                    className="word-table-cell"
                     style={{
-                      border: "1px solid #ddd",
-                      padding: "8px 12px",
+                      border: cellStyle.border || "solid #000000 0.5pt",
+                      borderBottom: cellStyle.borderBottom || cellStyle.border || "solid #000000 0.5pt",
+                      padding: cellStyle.padding || "0cm 5.4pt",
+                      verticalAlign: cellStyle.verticalAlign || "top",
                       backgroundColor: cellStyle.backgroundColor || "#ffffff",
-                      color: cellStyle.color || "#000",
-                      fontSize: "14px",
-                      position: "relative",
+                      color: cellStyle.color || "#000000",
+                      textAlign: cellStyle.textAlign || "left",
                       cursor: "pointer",
-                      boxShadow: isSelected ? "inset 0 0 0 2px #3b82f6" : "none",
-                      userSelect: "none",
-                      textAlign: "left",
-                      verticalAlign: "top",
-                      minWidth: "50px",
-                      minHeight: "1em",
+                      outline: isSelected ? "2px solid #3b82f6" : "none",
+                      outlineOffset: isSelected ? "-1px" : "0",
                     }}
                   >
                     {isEditing ? (
@@ -422,6 +426,7 @@ export default function TableOverlay({
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Resize Handles */}
       {isActive && !isEditingCell && (

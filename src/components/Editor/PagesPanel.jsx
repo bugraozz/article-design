@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { FileEdit, Layout, Plus } from "lucide-react";
+import { FileEdit, Layout, Plus, Trash2 } from "lucide-react";
 
-export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPage, onChangePageMode }) {
+export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPage, onChangePageMode, onDeletePage }) {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, pageId: null });
 
   const handleContextMenu = (e, pageId) => {
@@ -17,6 +17,15 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
   const handleChangeMode = (mode) => {
     if (contextMenu.pageId && onChangePageMode) {
       onChangePageMode(contextMenu.pageId, mode);
+    }
+    setContextMenu({ visible: false, x: 0, y: 0, pageId: null });
+  };
+
+  const handleDeletePage = () => {
+    if (contextMenu.pageId && onDeletePage) {
+      if (confirm(`Sayfa ${pages.find(p => p.id === contextMenu.pageId)?.title || contextMenu.pageId} silinecek. Emin misiniz?`)) {
+        onDeletePage(contextMenu.pageId);
+      }
     }
     setContextMenu({ visible: false, x: 0, y: 0, pageId: null });
   };
@@ -45,7 +54,7 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
               >
                 <Plus size={18} />
               </button>
-              
+
               {showAddMenu && (
                 <div
                   className="absolute top-full right-0 mt-1 bg-white border shadow-lg rounded text-sm z-[9999] whitespace-nowrap"
@@ -84,11 +93,10 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
                 key={page.id}
                 onClick={() => onSelectPage(page.id)}
                 onContextMenu={(e) => handleContextMenu(e, page.id)}
-                className={`w-full h-24 border-2 rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all duration-150 relative ${
-                  page.id === activePageId
-                    ? "bg-blue-500 border-blue-500 text-white shadow-lg"
-                    : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-blue-300 hover:shadow-md"
-                }`}
+                className={`w-full h-24 border-2 rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all duration-150 relative ${page.id === activePageId
+                  ? "bg-blue-500 border-blue-500 text-white shadow-lg"
+                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-blue-300 hover:shadow-md"
+                  }`}
               >
                 <div className="absolute top-2 right-2">
                   {page.mode === "document" ? (
@@ -98,9 +106,8 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
                   )}
                 </div>
                 {page.title}
-                <span className={`text-[10px] mt-1 ${
-                  page.id === activePageId ? "text-blue-100" : "text-gray-500"
-                }`}>
+                <span className={`text-[10px] mt-1 ${page.id === activePageId ? "text-blue-100" : "text-gray-500"
+                  }`}>
                   {page.mode === "document" ? "Belge" : "Serbest"}
                 </span>
               </button>
@@ -128,6 +135,14 @@ export default function PagesPanel({ pages, activePageId, onSelectPage, onAddPag
           >
             <Layout size={14} className="text-purple-500" />
             Serbest Moda Çevir
+          </button>
+          <div className="border-t border-gray-200 my-1"></div>
+          <button
+            className="flex items-center gap-2 w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
+            onClick={handleDeletePage}
+          >
+            <Trash2 size={14} className="text-red-500" />
+            Sayfayı Sil
           </button>
         </div>
       )}

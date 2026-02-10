@@ -28,12 +28,25 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState(null);
   const [drawPoints, setDrawPoints] = useState([]);
+  const [isDraggingAnnotation, setIsDraggingAnnotation] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [annotations, setAnnotations] = useState([]);
   const [redactions, setRedactions] = useState([]);
   const [selectedAnnotation, setSelectedAnnotation] = useState(null);
   const [showAnnotationList, setShowAnnotationList] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+
+
+
+  const [detectedFontInfo, setDetectedFontInfo] = useState({
+    fontSize: 12,
+    fontFamily: 'Arial',
+    fontWeight: 'normal'
+  });
+
+  // Performans optimizasyonu için sürükleme pozisyonunu ref olarak tutuyoruz
+  const dragPositionRef = useRef(null);
 
   const annotationManager = useRef(new AnnotationManagerPro()).current;
   const redactionManager = useRef(new RedactionManager()).current;
@@ -48,7 +61,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
       setCanRedo(annotationManager.canRedo());
     });
     const unsubscribeRedactions = redactionManager.onChange(setRedactions);
-    
+
     return () => {
       unsubscribeAnnotations();
       unsubscribeRedactions();
@@ -83,7 +96,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
 
         // Store as Uint8Array to prevent detachment issues
         setPdfData(pdfDataBytes);
-        
+
         // Create a copy for PDF.js to prevent detachment of original data
         const pdfDataCopy = new Uint8Array(pdfDataBytes);
         const doc = await pdfjsLib.getDocument({ data: pdfDataCopy }).promise;
@@ -117,11 +130,11 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
     const renderPage = async () => {
       try {
         const page = await pdf.getPage(currentPage);
-        
+
         // Get actual PDF page size (scale 1.0)
         const actualViewport = page.getViewport({ scale: 1.0 });
         setActualPageSize({ width: actualViewport.width, height: actualViewport.height });
-        
+
         // Get viewport for current scale
         const viewport = page.getViewport({ scale });
 
@@ -139,7 +152,62 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         };
 
         await page.render(renderContext).promise;
-        renderOverlay();
+
+        // Font bilgisini çıkar
+        try {
+          const textContent = await page.getTextContent();
+          if (textContent.items && textContent.items.length > 0) {
+            // Font boyutlarını topla
+            const fontSizes = [];
+
+            textContent.items.forEach(item => {
+              if (item.str && item.str.trim()) {
+                // Transform matrix'ten font boyutunu hesapla
+                // transform: [scaleX, skewX, skewY, scaleY, translateX, translateY]
+                if (item.transform && item.transform.length >= 4) {
+                  // scaleY genellikle font point size'dır, ancak viewport scale ile ilgisizdir.
+                  // PDF koordinat sistemindedir.
+                  const fontSizePoints = Math.sqrt(item.transform[2] * item.transform[2] + item.transform[3] * item.transform[3]);
+                  if (fontSizePoints > 0) {
+                    fontSizes.push(fontSizePoints);
+                  }
+                }
+              }
+            });
+
+            if (fontSizes.length > 0) {
+              // En yaygın font boyutunu bul
+              const sizeCount = {};
+              fontSizes.forEach(size => {
+                const roundedSize = Math.round(size);
+                sizeCount[roundedSize] = (sizeCount[roundedSize] || 0) + 1;
+              });
+
+              let mostCommonSize = 12;
+              let maxCount = 0;
+              Object.entries(sizeCount).forEach(([size, count]) => {
+                if (count > maxCount) {
+                  maxCount = count;
+                  mostCommonSize = parseInt(size);
+                }
+              });
+
+              if (mostCommonSize < 6) mostCommonSize = 10;
+              if (mostCommonSize > 72) mostCommonSize = 12;
+
+              setDetectedFontInfo(prev => ({
+                ...prev,
+                fontSize: mostCommonSize
+              }));
+
+              console.log(`📝 Algılanan font boyutu: ${mostCommonSize}px (Points)`);
+            }
+          }
+        } catch (fontErr) {
+          console.warn('Font bilgisi çıkarılamadı:', fontErr);
+        }
+
+        requestAnimationFrame(() => renderOverlay());
       } catch (err) {
         console.error('Sayfa render hatası:', err);
         if (isMounted) {
@@ -164,7 +232,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
   const denormalizeCoord = (normalizedCoord, dimension) => {
     return normalizedCoord * dimension;
   };
-  
+
   const normalizeToActualPdf = (coord, viewportDimension) => {
     // Convert viewport coordinate to actual PDF coordinate
     return (coord / viewportDimension) * actualPageSize.width;
@@ -191,45 +259,54 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
 
     pageAnnotations.forEach(annotation => {
       const isSelected = selectedAnnotation?.id === annotation.id;
-      
-      const x = denormalizeCoord(annotation.x, pageSize.width);
-      const y = denormalizeCoord(annotation.y, pageSize.height);
+
+      // Eğer bu annotation sürükleniyorsa, ref'teki pozisyonu kullan
+      let x, y;
+      if (isSelected && isDraggingAnnotation && dragPositionRef.current) {
+        x = denormalizeCoord(dragPositionRef.current.normalizedX, pageSize.width);
+        y = denormalizeCoord(dragPositionRef.current.normalizedY, pageSize.height);
+      } else {
+        x = denormalizeCoord(annotation.x, pageSize.width);
+        y = denormalizeCoord(annotation.y, pageSize.height);
+      }
+
       const width = denormalizeCoord(annotation.width, pageSize.width);
       const height = denormalizeCoord(annotation.height, pageSize.height);
-      
+
       if (annotation.type === 'highlight') {
         ctx.save();
-        
+
         const gradient = ctx.createLinearGradient(x, y, x, y + height);
         const baseColor = annotation.color;
         gradient.addColorStop(0, rgbToRgba(baseColor, 0.35));
         gradient.addColorStop(0.5, rgbToRgba(baseColor, 0.45));
         gradient.addColorStop(1, rgbToRgba(baseColor, 0.35));
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(x, y, width, height);
-        
+
         ctx.strokeStyle = rgbToRgba(baseColor, 0.6);
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, width, height);
-        
+
         ctx.restore();
-        
+
         if (isSelected) {
           ctx.strokeStyle = '#2196F3';
           ctx.lineWidth = 3;
           ctx.setLineDash([8, 4]);
           ctx.strokeRect(x - 3, y - 3, width + 6, height + 6);
           ctx.setLineDash([]);
-          
+
           drawResizeHandles(ctx, x, y, width, height);
         }
       } else if (annotation.type === 'text') {
         const fontSize = denormalizeCoord(annotation.fontSize || 0.02, pageSize.height);
+        const fontFamily = annotation.fontFamily || 'Arial';
         ctx.fillStyle = rgbToRgba(annotation.color);
-        ctx.font = `${fontSize}px Arial`;
+        ctx.font = `${fontSize}px ${fontFamily}`;
         ctx.fillText(annotation.text, x, y);
-        
+
         if (isSelected) {
           const metrics = ctx.measureText(annotation.text);
           ctx.strokeStyle = '#2196F3';
@@ -245,7 +322,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         ctx.lineJoin = 'round';
         ctx.shadowColor = rgbToRgba(annotation.color, 0.3);
         ctx.shadowBlur = 2;
-        
+
         ctx.beginPath();
         annotation.points.forEach((point, index) => {
           const px = denormalizeCoord(point.x, pageSize.width);
@@ -258,14 +335,14 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         });
         ctx.stroke();
         ctx.shadowBlur = 0;
-        
+
         if (isSelected) {
           const bounds = getDrawingBounds(annotation.points);
           const bx = denormalizeCoord(bounds.x, pageSize.width);
           const by = denormalizeCoord(bounds.y, pageSize.height);
           const bw = denormalizeCoord(bounds.width, pageSize.width);
           const bh = denormalizeCoord(bounds.height, pageSize.height);
-          
+
           ctx.strokeStyle = '#2196F3';
           ctx.lineWidth = 2;
           ctx.setLineDash([5, 5]);
@@ -277,24 +354,24 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         const baseColor = annotation.color;
         gradient.addColorStop(0, rgbToRgba(baseColor, 0.95));
         gradient.addColorStop(1, rgbToRgba(baseColor, 0.85));
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(x, y, width, height);
-        
+
         ctx.strokeStyle = rgbToRgba({ r: 0.8, g: 0.7, b: 0 });
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, width, height);
-        
+
         ctx.fillStyle = rgbToRgba({ r: 0.9, g: 0.8, b: 0.1 }, 0.3);
         ctx.fillRect(x, y, width, 20);
-        
+
         ctx.fillStyle = '#000';
         ctx.font = '12px Arial';
         const lines = wrapText(ctx, annotation.text, width - 20);
         lines.forEach((line, i) => {
           ctx.fillText(line, x + 10, y + 35 + i * 15);
         });
-        
+
         if (isSelected) {
           ctx.strokeStyle = '#2196F3';
           ctx.lineWidth = 3;
@@ -310,28 +387,30 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
       const y = denormalizeCoord(redaction.y, pageSize.height);
       const width = denormalizeCoord(redaction.width, pageSize.width);
       const height = denormalizeCoord(redaction.height, pageSize.height);
-      
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+
+      const color = redaction.color || { r: 0, g: 0, b: 0 };
+
+      // Opaklık 1 olmalı (kapatıcı)
+      ctx.fillStyle = rgbToRgba(color, 1);
       ctx.fillRect(x, y, width, height);
-      ctx.strokeStyle = 'rgba(255, 0, 0, 1)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, width, height);
+
+      // Kenarlık kaldırıldı
     });
   }, [annotations, redactions, currentPage, selectedAnnotation, pageSize]);
 
   const drawResizeHandles = (ctx, x, y, width, height) => {
     const handleSize = 8;
     const handles = [
-      { x: x - handleSize/2, y: y - handleSize/2 },
-      { x: x + width - handleSize/2, y: y - handleSize/2 },
-      { x: x - handleSize/2, y: y + height - handleSize/2 },
-      { x: x + width - handleSize/2, y: y + height - handleSize/2 },
+      { x: x - handleSize / 2, y: y - handleSize / 2 },
+      { x: x + width - handleSize / 2, y: y - handleSize / 2 },
+      { x: x - handleSize / 2, y: y + height - handleSize / 2 },
+      { x: x + width - handleSize / 2, y: y + height - handleSize / 2 },
     ];
-    
+
     ctx.fillStyle = '#2196F3';
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
-    
+
     handles.forEach(handle => {
       ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
       ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
@@ -382,15 +461,24 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
 
   const handleCanvasMouseDown = (e) => {
     const { x, y } = getCanvasCoordinates(e);
-    
+
     if (currentTool === ANNOTATION_TOOLS.NONE) {
       const clickedAnnotation = annotations
         .filter(a => a.pageIndex === currentPage - 1)
         .reverse()
         .find(a => isPointInAnnotation(x, y, a));
-      
+
       if (clickedAnnotation) {
         annotationManager.selectAnnotation(clickedAnnotation.id);
+
+        // Sürükleme başlat
+        setIsDraggingAnnotation(true);
+        const ax = denormalizeCoord(clickedAnnotation.x, pageSize.width);
+        const ay = denormalizeCoord(clickedAnnotation.y, pageSize.height);
+        setDragOffset({
+          x: x - ax,
+          y: y - ay
+        });
       } else {
         annotationManager.selectAnnotation(null);
       }
@@ -402,7 +490,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         .filter(a => a.pageIndex === currentPage - 1)
         .reverse()
         .find(a => isPointInAnnotation(x, y, a));
-      
+
       if (clickedAnnotation) {
         annotationManager.removeAnnotation(clickedAnnotation.id);
       }
@@ -411,7 +499,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
 
     setIsDrawing(true);
     setDrawStart({ x, y });
-    
+
     if (currentTool === ANNOTATION_TOOLS.DRAW) {
       setDrawPoints([{ x, y }]);
     }
@@ -422,13 +510,19 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
     const ay = denormalizeCoord(annotation.y, pageSize.height);
     const awidth = denormalizeCoord(annotation.width, pageSize.width);
     const aheight = denormalizeCoord(annotation.height, pageSize.height);
-    
+
+    // Hit area tolerance
+    const tolerance = 5;
+
     if (annotation.type === 'highlight' || annotation.type === 'sticky') {
-      return x >= ax && x <= ax + awidth && y >= ay && y <= ay + aheight;
+      return x >= ax - tolerance && x <= ax + awidth + tolerance && y >= ay - tolerance && y <= ay + aheight + tolerance;
     } else if (annotation.type === 'text') {
       const fontSize = denormalizeCoord(annotation.fontSize || 0.02, pageSize.height);
-      const width = annotation.text.length * fontSize * 0.6;
-      return x >= ax && x <= ax + width && y >= ay - fontSize && y <= ay;
+      // Metin seçimini kolaylaştırmak için tahmini genişlik kullan
+      // Daha kesin ölçüm için context gerekir ama burada basit yaklaşım yeterli
+      const estimatedWidth = annotation.text.length * fontSize * 0.6;
+
+      return x >= ax - tolerance && x <= ax + estimatedWidth + tolerance && y >= ay - fontSize - tolerance && y <= ay + tolerance;
     } else if (annotation.type === 'drawing') {
       return annotation.points.some(point => {
         const px = denormalizeCoord(point.x, pageSize.width);
@@ -441,16 +535,32 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
   };
 
   const handleCanvasMouseMove = (e) => {
-    if (!isDrawing || !drawStart) return;
-
     const { x, y } = getCanvasCoordinates(e);
+
+    // Eğer sürükleme modundaysak ve bir annotation seçiliyse
+    if (isDraggingAnnotation && selectedAnnotation && currentTool === ANNOTATION_TOOLS.NONE) {
+      const newX = x - dragOffset.x;
+      const newY = y - dragOffset.y;
+
+      // Normalize et
+      const normalizedX = normalizeCoord(newX, pageSize.width, actualPageSize.width);
+      const normalizedY = normalizeCoord(newY, pageSize.height, actualPageSize.height);
+
+      // Performans için sadece ref'i güncelle ve çizim yap (state güncelleme YOK)
+      dragPositionRef.current = { normalizedX, normalizedY };
+
+      requestAnimationFrame(() => renderOverlay());
+      return;
+    }
+
+    if (!isDrawing || !drawStart) return;
 
     if (currentTool === ANNOTATION_TOOLS.DRAW) {
       setDrawPoints(prev => [...prev, { x, y }]);
-      
+
       const ctx = overlayCanvasRef.current.getContext('2d');
       renderOverlay();
-      
+
       ctx.strokeStyle = rgbToRgba(currentColor);
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
@@ -477,27 +587,26 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         gradient.addColorStop(0, rgbToRgba(currentColor, 0.35));
         gradient.addColorStop(0.5, rgbToRgba(currentColor, 0.45));
         gradient.addColorStop(1, rgbToRgba(currentColor, 0.35));
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(drawStart.x, drawStart.y, width, height);
-        
+
         ctx.strokeStyle = rgbToRgba(currentColor, 0.6);
         ctx.lineWidth = 1;
         ctx.strokeRect(drawStart.x, drawStart.y, width, height);
       } else if (currentTool === ANNOTATION_TOOLS.REDACT) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillStyle = rgbToRgba(currentColor, 1);
         ctx.fillRect(drawStart.x, drawStart.y, width, height);
-        ctx.strokeStyle = 'rgba(255, 0, 0, 1)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(drawStart.x, drawStart.y, width, height);
+
+        // Kenarlık kaldırıldı
       } else if (currentTool === ANNOTATION_TOOLS.STICKY) {
         const stickyWidth = 200;
         const stickyHeight = 150;
-        
+
         const gradient = ctx.createLinearGradient(drawStart.x, drawStart.y, drawStart.x, drawStart.y + stickyHeight);
         gradient.addColorStop(0, rgbToRgba(currentColor, 0.95));
         gradient.addColorStop(1, rgbToRgba(currentColor, 0.85));
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(drawStart.x, drawStart.y, stickyWidth, stickyHeight);
         ctx.strokeStyle = rgbToRgba({ r: 0.8, g: 0.7, b: 0 });
@@ -508,6 +617,23 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
   };
 
   const handleCanvasMouseUp = (e) => {
+    if (isDraggingAnnotation) {
+      setIsDraggingAnnotation(false);
+
+      // Sürükleme bittiğinde son konumu kaydet
+      if (selectedAnnotation && dragPositionRef.current) {
+        annotationManager.updateAnnotation(selectedAnnotation.id, {
+          x: dragPositionRef.current.normalizedX,
+          y: dragPositionRef.current.normalizedY
+        });
+        dragPositionRef.current = null;
+
+        // Güncelleme sonrası tekrar çizim yap ki seçim kutusu doğru yerde olsun
+        requestAnimationFrame(() => renderOverlay());
+      }
+      return;
+    }
+
     if (!isDrawing || !drawStart) return;
 
     const { x, y } = getCanvasCoordinates(e);
@@ -515,13 +641,20 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
     const width = x - drawStart.x;
     const height = y - drawStart.y;
 
+    // Çizim bitti, state'leri sıfırla
+    setIsDrawing(false);
+    setDrawStart(null);
+
+    // Minimum boyut kontrolü (kazara tıklamaları önlemek için)
+    const minSize = 5;
+
     if (currentTool === ANNOTATION_TOOLS.HIGHLIGHT) {
       if (Math.abs(width) > 5 && Math.abs(height) > 5) {
         const normalizedX = normalizeCoord(Math.min(drawStart.x, x), pageSize.width, actualPageSize.width);
         const normalizedY = normalizeCoord(Math.min(drawStart.y, y), pageSize.height, actualPageSize.height);
         const normalizedWidth = normalizeCoord(Math.abs(width), pageSize.width, actualPageSize.width);
         const normalizedHeight = normalizeCoord(Math.abs(height), pageSize.height, actualPageSize.height);
-        
+
         annotationManager.addAnnotation({
           type: 'highlight',
           pageIndex: currentPage - 1,
@@ -539,25 +672,37 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         const normalizedY = normalizeCoord(Math.min(drawStart.y, y), pageSize.height, actualPageSize.height);
         const normalizedWidth = normalizeCoord(Math.abs(width), pageSize.width, actualPageSize.width);
         const normalizedHeight = normalizeCoord(Math.abs(height), pageSize.height, actualPageSize.height);
-        
-        redactionManager.addRedaction(currentPage - 1, normalizedX, normalizedY, normalizedWidth, normalizedHeight);
+
+        redactionManager.addRedaction(currentPage - 1, normalizedX, normalizedY, normalizedWidth, normalizedHeight, currentColor);
       }
     } else if (currentTool === ANNOTATION_TOOLS.TEXT) {
       const text = prompt('Metin girin:');
       if (text) {
         const normalizedX = normalizeCoord(drawStart.x, pageSize.width, actualPageSize.width);
         const normalizedY = normalizeCoord(drawStart.y, pageSize.height, actualPageSize.height);
-        const normalizedFontSize = normalizeCoord(14, pageSize.height, actualPageSize.height);
-        
-        annotationManager.addAnnotation({
+        // Algılanan font boyutunu kullan (varsayılan yerine), ama width'e oranla
+        // detectedFontInfo.fontSize zaten sayfa ölçeğinde (point cinsinden), bunu normalize etmeliyiz
+        const actualPdfHeight = actualPageSize.height || 842; // A4 height points default
+        const normalizedFontSize = detectedFontInfo.fontSize / actualPdfHeight;
+
+        const newAnnotation = annotationManager.addAnnotation({
           type: 'text',
           pageIndex: currentPage - 1,
           x: normalizedX,
           y: normalizedY,
           text,
           fontSize: normalizedFontSize,
+          fontFamily: detectedFontInfo.fontFamily,
           color: { r: 0, g: 0, b: 0 },
         });
+
+        // Gecikmeyi önlemek için hemen seç
+        if (newAnnotation) {
+          setTimeout(() => {
+            annotationManager.selectAnnotation(newAnnotation.id);
+            renderOverlay();
+          }, 50);
+        }
       }
     } else if (currentTool === ANNOTATION_TOOLS.DRAW) {
       if (drawPoints.length > 2) {
@@ -565,7 +710,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
           x: normalizeCoord(point.x, pageSize.width, actualPageSize.width),
           y: normalizeCoord(point.y, pageSize.height, actualPageSize.height),
         }));
-        
+
         annotationManager.addAnnotation({
           type: 'drawing',
           pageIndex: currentPage - 1,
@@ -582,7 +727,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         const normalizedY = normalizeCoord(drawStart.y, pageSize.height, actualPageSize.height);
         const normalizedWidth = normalizeCoord(200, pageSize.width, actualPageSize.width);
         const normalizedHeight = normalizeCoord(150, pageSize.height, actualPageSize.height);
-        
+
         annotationManager.addAnnotation({
           type: 'sticky',
           pageIndex: currentPage - 1,
@@ -610,7 +755,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
       // Annotation'ları denormalize et
       const denormalizedAnnotations = annotations.map(ann => {
         const result = { ...ann };
-        
+
         if (ann.type === 'highlight' || ann.type === 'sticky') {
           result.x = ann.x * actualPageSize.width;
           result.y = ann.y * actualPageSize.height;
@@ -626,10 +771,10 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
             y: p.y * actualPageSize.height,
           }));
         }
-        
+
         return result;
       });
-      
+
       // Redaction'ları da annotation olarak ekle
       const denormalizedRedactions = redactions.map(red => ({
         type: 'redaction',
@@ -639,10 +784,10 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
         width: red.width * actualPageSize.width,
         height: red.height * actualPageSize.height,
       }));
-      
+
       // Tüm annotation'ları ve redaction'ları birleştir
       const allItems = [...denormalizedAnnotations, ...denormalizedRedactions];
-      
+
       await PdfExportUtilPro.exportAndDownload(pdfData, allItems, fileName);
       alert('PDF başarıyla dışa aktarıldı!');
     } catch (error) {
@@ -798,8 +943,8 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
           <span>🖍️</span> Vurgula
         </button>
 
-        <button onClick={() => handleToolChange(ANNOTATION_TOOLS.TEXT)} style={toolButtonStyle(ANNOTATION_TOOLS.TEXT)}>
-          <span>📝</span> Metin
+        <button onClick={() => handleToolChange(ANNOTATION_TOOLS.TEXT)} style={toolButtonStyle(ANNOTATION_TOOLS.TEXT)} title={`Font: ${detectedFontInfo.fontFamily}, ${detectedFontInfo.fontSize}px`}>
+          <span>📝</span> Metin ({detectedFontInfo.fontSize}px)
         </button>
 
         <button onClick={() => handleToolChange(ANNOTATION_TOOLS.DRAW)} style={toolButtonStyle(ANNOTATION_TOOLS.DRAW)}>
@@ -850,7 +995,7 @@ export default function ProfessionalPdfViewerFixed({ pdfUrl, fileName = 'documen
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               zIndex: 1000,
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(5, 1fr)',
               gap: '8px',
             }}>
               {PRESET_COLORS.map(color => (

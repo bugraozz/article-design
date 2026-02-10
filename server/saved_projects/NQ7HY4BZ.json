@@ -1,0 +1,40 @@
+{
+  "code": "NQ7HY4BZ",
+  "projectName": "Automated Test Project",
+  "pages": [
+    {
+      "id": 1,
+      "title": "Test Page 1",
+      "type": "content",
+      "mode": "document",
+      "overlays": [
+        {
+          "id": "text-1",
+          "type": "text",
+          "content": "Hello World",
+          "x": 100,
+          "y": 100
+        }
+      ],
+      "images": [],
+      "tables": []
+    }
+  ],
+  "articleSettings": {
+    "titleColor": "#ff0000",
+    "bodyFontSize": 14
+  },
+  "authors": [
+    {
+      "name": "Test Author"
+    }
+  ],
+  "institutions": [
+    "Test University"
+  ],
+  "contacts": [
+    "test@example.com"
+  ],
+  "savedAt": "2026-02-10T16:48:52.627Z",
+  "version": "1.0"
+}

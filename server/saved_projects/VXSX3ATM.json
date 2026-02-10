@@ -1,0 +1,29 @@
+{
+  "code": "VXSX3ATM",
+  "projectName": "Test Proje",
+  "pages": [
+    {
+      "id": 1,
+      "title": "Test Sayfa",
+      "type": "content",
+      "mode": "document",
+      "overlays": [],
+      "images": [],
+      "tables": [],
+      "documentContent": "<p>Test icerik</p>"
+    }
+  ],
+  "articleSettings": {
+    "titleColor": "#1f2937",
+    "bodyFontSize": 12
+  },
+  "authors": [
+    {
+      "name": "Test Yazar"
+    }
+  ],
+  "institutions": [],
+  "contacts": [],
+  "savedAt": "2026-02-10T16:29:50.322Z",
+  "version": "1.0"
+}

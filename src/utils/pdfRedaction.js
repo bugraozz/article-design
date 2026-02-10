@@ -6,7 +6,7 @@ export class RedactionManager {
     this.listeners = [];
   }
 
-  addRedaction(pageIndex, x, y, width, height) {
+  addRedaction(pageIndex, x, y, width, height, color = { r: 0, g: 0, b: 0 }) {
     this.redactions.push({
       id: Date.now() + Math.random(),
       pageIndex,
@@ -14,6 +14,7 @@ export class RedactionManager {
       y,
       width,
       height,
+      color,
       timestamp: new Date().toISOString(),
     });
     this.notifyListeners();
@@ -58,23 +59,25 @@ export class RedactionManager {
       } else {
         clonedData = new Uint8Array(pdfData);
       }
-      
+
       const pdfDoc = await PDFDocument.load(clonedData);
-      
+
       for (const redaction of this.redactions) {
         const page = pdfDoc.getPage(redaction.pageIndex);
         const { height: pageHeight } = page.getSize();
-        
+
+        const color = redaction.color || { r: 0, g: 0, b: 0 };
+
         page.drawRectangle({
           x: redaction.x,
           y: pageHeight - redaction.y - redaction.height,
           width: redaction.width,
           height: redaction.height,
-          color: rgb(0, 0, 0),
+          color: rgb(color.r, color.g, color.b),
           opacity: 1,
         });
       }
-      
+
       const pdfBytes = await pdfDoc.save();
       return pdfBytes;
     } catch (error) {
