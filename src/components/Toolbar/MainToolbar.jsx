@@ -15,6 +15,8 @@ import {
   Upload,
   Save,
   Loader2,
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 
 export default function MainToolbar({
@@ -37,86 +39,106 @@ export default function MainToolbar({
 }) {
   const [showPageModeMenu, setShowPageModeMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
   return (
-    <div className="w-full bg-white border-b border-gray-200 px-6 py-3 flex gap-4 items-center shadow-sm">
+    <div className="w-[calc(100%-32px)] mx-auto mt-4 rounded-2xl bg-white/90 backdrop-blur-xl border border-white/20 px-6 py-3 flex gap-4 items-center shadow-[0_8px_32px_rgba(0,0,0,0.08)] sticky top-4 z-40 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(244,63,94,0.1)]">
+
       {/* Sol Grup - İçerik Ekleme */}
       <div className="flex gap-2 items-center">
-        <span className="text-xs font-semibold text-gray-500 tracking-wide uppercase">İçerik</span>
+        <div className="flex flex-col mr-1 hidden xl:flex">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5">Editör</span>
+
+        </div>
 
         <button
           onClick={onAddText}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-rose-200 hover:bg-gradient-to-br hover:from-white hover:to-rose-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-0.5"
         >
-          <Type size={18} className="text-blue-500" />
-          Metin
+          <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-rose-500 group-hover:to-red-600 transition-all duration-300 shadow-inner group-hover:shadow-rose-500/20">
+            <Type size={16} />
+          </div>
+          <span className="group-hover:text-neutral-900 transition-colors font-semibold">Metin</span>
         </button>
 
         <button
           onClick={onAddImage}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-rose-200 hover:bg-gradient-to-br hover:from-white hover:to-rose-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-0.5"
         >
-          <Image size={18} className="text-emerald-500" />
-          Resim
+          <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-rose-500 group-hover:to-red-600 transition-all duration-300 shadow-inner group-hover:shadow-rose-500/20">
+            <Image size={16} />
+          </div>
+          <span className="group-hover:text-neutral-900 transition-colors font-semibold">Resim</span>
         </button>
 
         <button
           onClick={onAddTable}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-rose-200 hover:bg-gradient-to-br hover:from-white hover:to-rose-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-0.5"
         >
-          <Grid3x3 size={18} className="text-orange-500" />
-          Tablo
+          <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-rose-500 group-hover:to-red-600 transition-all duration-300 shadow-inner group-hover:shadow-rose-500/20">
+            <Grid3x3 size={16} />
+          </div>
+          <span className="group-hover:text-neutral-900 transition-colors font-semibold">Tablo</span>
         </button>
-
-
 
         <div className="relative">
           <button
             onClick={() => setShowPageModeMenu(!showPageModeMenu)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+            className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-rose-200 hover:bg-gradient-to-br hover:from-white hover:to-rose-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-rose-500/10 hover:-translate-y-0.5"
           >
-            <FilePlus size={18} className="text-purple-500" />
-            Sayfa
+            <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-rose-500 group-hover:to-red-600 transition-all duration-300 shadow-inner group-hover:shadow-rose-500/20">
+              <FilePlus size={16} />
+            </div>
+            <span className="group-hover:text-neutral-900 transition-colors font-semibold">Sayfa</span>
+            <ChevronDown size={12} className="text-neutral-400 group-hover:text-rose-500 transition-colors" />
           </button>
 
           {showPageModeMenu && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-[100] min-w-[160px]">
+            <div className="absolute top-full left-0 mt-2 bg-white border border-rose-100 rounded-xl shadow-xl shadow-rose-900/10 z-[100] min-w-[200px] p-1 animate-in fade-in slide-in-from-top-2 duration-200">
               <button
                 onClick={() => {
                   onAddPage("document");
                   setShowPageModeMenu(false);
                 }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-blue-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
+                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-rose-50 rounded-lg text-left text-sm transition-colors group"
               >
-                <FileEdit size={16} className="text-blue-500" />
+                <div className="p-1.5 bg-white border border-rose-100 rounded-lg text-rose-500 shadow-sm group-hover:border-rose-200">
+                  <FileEdit size={16} />
+                </div>
                 <div>
-                  <div className="font-semibold">Belge Sayfası</div>
-                  <div className="text-xs text-gray-500">Word gibi editör</div>
+                  <div className="font-bold text-neutral-700 group-hover:text-neutral-900">Belge Sayfası</div>
+                  <div className="text-[10px] text-neutral-400 font-medium">Standart editör</div>
                 </div>
               </button>
+
               <button
                 onClick={() => {
                   onAddPage("blank");
                   setShowPageModeMenu(false);
                 }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-purple-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
+                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-rose-50 rounded-lg text-left text-sm transition-colors group"
               >
-                <Layout size={16} className="text-purple-500" />
+                <div className="p-1.5 bg-white border border-rose-100 rounded-lg text-rose-500 shadow-sm group-hover:border-rose-200">
+                  <Layout size={16} />
+                </div>
                 <div>
-                  <div className="font-semibold">Boş Sayfa</div>
-                  <div className="text-xs text-gray-500">Sıfırdan başla</div>
+                  <div className="font-bold text-neutral-700 group-hover:text-neutral-900">Boş Sayfa</div>
+                  <div className="text-[10px] text-neutral-400 font-medium">Serbest çalışma alanı</div>
                 </div>
               </button>
+
               <button
                 onClick={() => {
                   onShowTemplateModal();
                   setShowPageModeMenu(false);
                 }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-green-50 text-left text-sm font-medium text-gray-700"
+                className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-rose-50 rounded-lg text-left text-sm transition-colors group"
               >
-                <Layout size={16} className="text-green-500" />
+                <div className="p-1.5 bg-white border border-rose-100 rounded-lg text-rose-500 shadow-sm group-hover:border-rose-200">
+                  <Sparkles size={16} />
+                </div>
                 <div>
-                  <div className="font-semibold">Şablondan Seç</div>
-                  <div className="text-xs text-gray-500">Hazır düzenler</div>
+                  <div className="font-bold text-neutral-700 group-hover:text-neutral-900">Şablon Galerisi</div>
+                  <div className="text-[10px] text-neutral-400 font-medium">Hazır tasarımlar</div>
                 </div>
               </button>
             </div>
@@ -125,96 +147,93 @@ export default function MainToolbar({
       </div>
 
       {/* Matematik Grup - Denklem & Sembol */}
-      <div className="flex gap-2 items-center">
-        <span className="text-xs font-semibold text-gray-500 tracking-wide uppercase">Matematik</span>
+      <div className="flex gap-2 items-center pl-4 border-l border-slate-200/60">
+        <div className="flex flex-col mr-1 hidden xl:flex">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-0.5">Araçlar</span>
+
+        </div>
 
         <button
           onClick={onOpenEquationEditor}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-violet-200 hover:bg-gradient-to-br hover:from-white hover:to-violet-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-violet-500/10 hover:-translate-y-0.5"
         >
-          <Sigma size={18} className="text-purple-500" />
-          Denklem
+          <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-violet-500 group-hover:to-purple-600 transition-all duration-300 shadow-inner group-hover:shadow-violet-500/20">
+            <Sigma size={16} />
+          </div>
+          <span className="group-hover:text-neutral-900 transition-colors font-semibold">Denklem</span>
         </button>
 
         <button
           onClick={onOpenMathSymbolPanel}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center gap-2 px-3 py-2 bg-white/50 border border-neutral-200/60 rounded-xl hover:border-orange-200 hover:bg-gradient-to-br hover:from-white hover:to-orange-50 transition-all duration-300 font-medium text-neutral-600 text-sm shadow-sm hover:shadow-lg hover:shadow-orange-500/10 hover:-translate-y-0.5"
         >
-          <PenTool size={18} className="text-indigo-500" />
-          Sembol
+          <div className="p-1.5 bg-neutral-100 rounded-lg text-neutral-500 group-hover:text-white group-hover:bg-gradient-to-br group-hover:from-orange-500 group-hover:to-amber-600 transition-all duration-300 shadow-inner group-hover:shadow-orange-500/20">
+            <PenTool size={16} />
+          </div>
+          <span className="group-hover:text-neutral-900 transition-colors font-semibold">Sembol</span>
         </button>
       </div>
 
-      <div className="flex-1 border-l border-gray-300"></div>
+      <div className="flex-1"></div>
 
       {/* Görünüm Toggle */}
       <button
         onClick={onToggleCleanView}
-        className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-150 font-medium text-sm hover:shadow-md ${cleanView
-            ? "bg-green-50 border-green-400 text-green-700 hover:bg-green-100"
-            : "bg-white border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50"
+        className={`flex items-center gap-2 px-4 py-2 border rounded-xl transition-all duration-200 font-bold text-xs uppercase tracking-wider hover:shadow-md ${cleanView
+          ? "bg-gradient-to-r from-neutral-800 to-neutral-700 border-transparent text-white shadow-lg shadow-neutral-900/20 ring-2 ring-neutral-200 ring-offset-2 scale-105"
+          : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:text-neutral-900 hover:bg-neutral-50"
           }`}
         title={cleanView ? "Düzenleme moduna geç" : "Temiz görünüm (grid/kontroller gizli)"}
       >
-        {cleanView ? <EyeOff size={18} /> : <Eye size={18} />}
-        {cleanView ? "Düzenleme" : "Temiz Görünüm"}
+        {cleanView ? <EyeOff size={16} /> : <Eye size={16} />}
+        {cleanView ? "Düzenleme" : "Önizleme"}
       </button>
 
       {/* Projeyi Kaydet */}
       <button
         onClick={onSaveProject}
         disabled={isSavingProject}
-        className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-150 font-medium text-sm hover:shadow-md ${isSavingProject
-            ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-            : "bg-emerald-50 border-emerald-400 text-emerald-700 hover:bg-emerald-100"
+        className={`flex items-center gap-2 px-4 py-2 border rounded-xl transition-all duration-200 font-bold text-xs uppercase tracking-wider hover:shadow-lg hover:-translate-y-0.5 ${isSavingProject
+          ? "bg-neutral-100 border-neutral-200 text-neutral-400 cursor-not-allowed"
+          : "bg-gradient-to-r from-emerald-500 to-green-600 border-transparent text-white shadow-green-900/20"
           }`}
-        title="Projeyi kaydet ve paylaşım kodu al"
       >
         {isSavingProject ? (
-          <Loader2 size={18} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
         ) : (
-          <Save size={18} />
+          <Save size={16} />
         )}
         {isSavingProject ? "Kaydediliyor..." : "Projeyi Kaydet"}
       </button>
 
       {/* Sağ Grup - Dışa Aktarma */}
-      <div className="flex gap-2 items-center relative">
-        <span className="text-xs font-semibold text-gray-500 tracking-wide uppercase">Dışa Aktar</span>
-
-        <button
-          onClick={onExport}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-amber-400 hover:bg-amber-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
-        >
-          <Download size={18} className="text-amber-500" />
-          PNG
-        </button>
+      <div className="flex gap-2 items-center relative pl-4 border-l border-neutral-200">
 
         <button
           onClick={onExportPDF}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-rose-400 hover:bg-rose-50 transition-all duration-150 font-medium text-gray-700 text-sm hover:shadow-md"
+          className="group flex items-center justify-center w-10 h-10 bg-white border border-neutral-600 rounded-xl hover:border-neutral-600 hover:bg-neutral-50 transition-all duration-200 text-neutral-800 hover:text-neutral-900 shadow-sm"
+          title="Hızlı PDF İndir"
         >
-          <FileText size={18} className="text-rose-500" />
-          PDF (Basit)
+          <Download size={18} />
         </button>
 
         <div className="relative">
           <button
             onClick={() => setShowExportMenu(!showExportMenu)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-150 font-medium text-sm hover:shadow-lg"
+            className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 text-white rounded-xl hover:bg-neutral-800 transition-all duration-200 font-bold text-xs uppercase tracking-wider shadow-lg shadow-neutral-900/20 hover:-translate-y-0.5 active:translate-y-0"
           >
-            <FileText size={18} />
-            Adobe Export ▾
+            <span className="text-rose-300"><FileText size={16} /></span>
+            Dışa Aktar
+            <ChevronDown size={12} className="opacity-50" />
           </button>
 
           {showExportMenu && (
-            <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-xl z-[100] min-w-[220px]">
-              <div className="px-3 py-2 bg-gradient-to-r from-red-50 to-orange-50 border-b border-gray-200">
-                <div className="text-xs font-bold text-red-700 flex items-center gap-1">
-                  <FileText size={14} />
-                  Adobe PDF Services
+            <div className="absolute top-full right-0 mt-3 bg-white border border-rose-100 rounded-xl shadow-2xl shadow-rose-900/10 z-[100] min-w-[240px] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="px-4 py-3 bg-gradient-to-r from-rose-50 to-orange-50 border-b border-rose-100">
+                <div className="text-[10px] font-black text-rose-600 uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles size={12} />
+                  Premium Export
                 </div>
-                <div className="text-xs text-gray-600">Profesyonel kalite</div>
               </div>
 
               <button
@@ -222,14 +241,14 @@ export default function MainToolbar({
                   onExportAdobePDF?.();
                   setShowExportMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-left text-sm font-medium text-gray-700 border-b border-gray-100"
+                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-neutral-50 text-left transition-colors group border-b border-neutral-50"
               >
-                <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
-                  <FileText size={16} className="text-red-600" />
+                <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                  <FileText size={20} />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800">PDF Export</div>
-                  <div className="text-xs text-gray-500">Vektörel, yüksek kalite</div>
+                  <div className="font-bold text-neutral-800 text-sm group-hover:text-red-600 transition-colors">Adobe PDF</div>
+                  <div className="text-[10px] text-neutral-400 font-medium">Yüksek kalite vektörel çıktı</div>
                 </div>
               </button>
 
@@ -238,14 +257,14 @@ export default function MainToolbar({
                   onExportAdobeWord?.();
                   setShowExportMenu(false);
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-left text-sm font-medium text-gray-700"
+                className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-neutral-50 text-left transition-colors group"
               >
-                <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
-                  <FileText size={16} className="text-blue-600" />
+                <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                  <FileText size={20} />
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-800">Word Export</div>
-                  <div className="text-xs text-gray-500">Düzenlenebilir .docx</div>
+                  <div className="font-bold text-neutral-800 text-sm group-hover:text-blue-600 transition-colors">Microsoft Word</div>
+                  <div className="text-[10px] text-neutral-400 font-medium">Düzenlenebilir .docx belgesi</div>
                 </div>
               </button>
             </div>

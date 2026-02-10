@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Table, Trash2, Plus, Minus, X, Merge, Split } from "lucide-react";
 
 export default function TablePropertiesPanel({
   overlayId,
@@ -81,173 +81,185 @@ export default function TablePropertiesPanel({
   };
 
   return (
-    <div className="w-96 bg-white border-l border-gray-200 p-6 overflow-y-auto shadow-lg">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-800">Tablo Özellikleri</h3>
+    <div className="w-full h-full flex flex-col">
+      {/* Başlık - Professional Gradient Header */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-rose-500 to-red-600 border-b border-rose-500/20 shadow-[0_4px_12px_rgba(225,29,72,0.15)]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-white/20 backdrop-blur-md text-white rounded-xl border border-white/30 shadow-inner">
+            <Table size={18} className="drop-shadow-sm" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white tracking-tight">Tablo Düzenle</h3>
+            <p className="text-[10px] text-rose-100/80 font-medium">Yapı ve Tasarım</p>
+          </div>
+        </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition"
+          className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg transition-all duration-200"
         >
-          ✕
+          <X size={18} />
         </button>
       </div>
 
-      <div className="space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-20">
+
         {/* TABLO GENİŞLİĞİ */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Tablo Genişliği: {tableWidth}%
-          </label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide">Genişlik</label>
+            <span className="text-xs font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded">%{tableWidth}</span>
+          </div>
           <input
             type="range"
             min="50"
             max="100"
             value={tableWidth}
             onChange={(e) => handleTableWidth(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-500 shadow-inner"
           />
         </div>
 
         {/* HÜCRE PADDING */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Hücre İç Boşluğu: {cellPadding}px
-          </label>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide">Hücre Boşluğu</label>
+            <span className="text-xs font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded">{cellPadding}px</span>
+          </div>
           <input
             type="range"
             min="4"
             max="24"
             value={cellPadding}
             onChange={(e) => handleCellPadding(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-neutral-600"
           />
         </div>
 
-        {/* BORDER GENİŞLİĞİ */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Kenar Kalınlığı: {borderWidth}px
-          </label>
-          <input
-            type="range"
-            min="1"
-            max="4"
-            value={borderWidth}
-            onChange={(e) => handleBorderWidth(parseInt(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
+        {/* KENARLIK AYARLARI */}
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide block">Kenarlıklar</label>
 
-        {/* BORDER RENGİ */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Kenar Rengi
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={borderColor}
-              onChange={(e) => handleBorderColor(e.target.value)}
-              className="w-12 h-10 border-2 border-gray-300 rounded-lg cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">{borderColor}</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <span className="text-[9px] text-neutral-400 font-medium block mb-1">Kalınlık ({borderWidth}px)</span>
+              <input
+                type="range"
+                min="1"
+                max="4"
+                value={borderWidth}
+                onChange={(e) => handleBorderWidth(parseInt(e.target.value))}
+                className="w-full h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-neutral-600"
+              />
+            </div>
+            <div>
+              <span className="text-[9px] text-neutral-400 font-medium block mb-1">Renk</span>
+              <div className="flex items-center gap-2 border border-neutral-200 rounded-lg p-1 bg-white">
+                <input
+                  type="color"
+                  value={borderColor}
+                  onChange={(e) => handleBorderColor(e.target.value)}
+                  className="w-6 h-6 rounded border-none p-0 bg-transparent cursor-pointer"
+                />
+                <span className="text-[10px] text-neutral-500 font-mono uppercase">{borderColor}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* HÜCRE ARKA PLAN RENGİ */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Hücre Arka Planı
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={bgColor}
-              onChange={(e) => handleCellBgColor(e.target.value)}
-              className="w-12 h-10 border-2 border-gray-300 rounded-lg cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">{bgColor}</span>
-          </div>
-        </div>
+        {/* RENK AYARLARI */}
+        <div className="space-y-3">
+          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide block">Arka Plan Renkleri</label>
 
-        {/* HEADER ARKA PLAN RENGİ */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Başlık Arka Planı
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={headerBgColor}
-              onChange={(e) => handleHeaderBgColor(e.target.value)}
-              className="w-12 h-10 border-2 border-gray-300 rounded-lg cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">{headerBgColor}</span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-2 bg-white">
+              <span className="text-xs text-neutral-600">Hücre Rengi</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={bgColor}
+                  onChange={(e) => handleCellBgColor(e.target.value)}
+                  className="w-6 h-6 rounded border-none p-0 bg-transparent cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border border-neutral-200 rounded-lg p-2 bg-white">
+              <span className="text-xs text-neutral-600">Başlık Rengi</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={headerBgColor}
+                  onChange={(e) => handleHeaderBgColor(e.target.value)}
+                  className="w-6 h-6 rounded border-none p-0 bg-transparent cursor-pointer"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* TABLO İŞLEMLERİ */}
-        <div className="pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Tablo İşlemleri</h4>
-          <div className="space-y-2">
+        <div className="pt-4 border-t border-neutral-200">
+          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide block mb-3">Yapı</label>
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => editor.chain().focus().addRowAfter().run()}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white/50 border border-slate-200/60 rounded-xl hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-600 text-slate-600 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
             >
-              ➕ Satır Ekle
+              <Plus size={14} /> Satır Ekle
             </button>
 
             <button
               onClick={() => editor.chain().focus().addColumnAfter().run()}
-              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium text-sm"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white/50 border border-slate-200/60 rounded-xl hover:border-rose-300 hover:bg-rose-50/50 hover:text-rose-600 text-slate-600 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5"
             >
-              ➕ Sütun Ekle
+              <Plus size={14} /> Sütun Ekle
             </button>
 
             <button
               onClick={() => editor.chain().focus().deleteRow().run()}
-              className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-neutral-200 rounded-lg hover:border-red-300 hover:bg-red-50 hover:text-red-600 text-neutral-500 text-xs font-medium transition"
             >
-              ➖ Satır Sil
+              <Minus size={14} /> Satır Sil
             </button>
 
             <button
               onClick={() => editor.chain().focus().deleteColumn().run()}
-              className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-neutral-200 rounded-lg hover:border-red-300 hover:bg-red-50 hover:text-red-600 text-neutral-500 text-xs font-medium transition"
             >
-              ➖ Sütun Sil
+              <Minus size={14} /> Sütun Sil
             </button>
 
             <button
               onClick={() => editor.chain().focus().deleteTable().run()}
-              className="w-full px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition font-medium text-sm"
+              className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 text-red-600 text-xs font-medium transition mt-1"
             >
-              🗑️ Tabloyu Sil
+              <Trash2 size={14} /> Tabloyu Sil
             </button>
           </div>
         </div>
 
-        {/* TABLO HÜCRE İŞLEMLERİ */}
-        <div className="pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Hücre İşlemleri</h4>
-          <div className="space-y-2">
+        {/* HÜCRE İŞLEMLERİ */}
+        <div className="pt-4 border-t border-neutral-200">
+          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide block mb-3">Hücre</label>
+          <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => editor.chain().focus().mergeCells().run()}
-              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               disabled={!editor.can().mergeCells()}
             >
-              🔗 Hücreleri Birleştir
+              <Merge size={14} /> Birleştir
             </button>
 
             <button
               onClick={() => editor.chain().focus().splitCell().run()}
-              className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-neutral-200 rounded-lg hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 text-neutral-600 text-xs font-medium transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               disabled={!editor.can().splitCell()}
             >
-              ✂️ Hücreyi Böl
+              <Split size={14} /> Böl
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

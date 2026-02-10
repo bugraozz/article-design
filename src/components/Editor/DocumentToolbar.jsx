@@ -26,9 +26,9 @@ import {
   Split,
 } from "lucide-react";
 
-export default function DocumentToolbar({ 
-  editor, 
-  onOpenEquationEditor, 
+export default function DocumentToolbar({
+  editor,
+  onOpenEquationEditor,
   onOpenMathSymbolPanel,
   // Serbest mod için grid kontrolleri
   showGridControls = false,
@@ -331,7 +331,7 @@ export default function DocumentToolbar({
               const { state } = editor;
               const { selection } = state;
               const table = selection.$anchor.node(-1);
-              
+
               if (table && table.type.name === 'table') {
                 // CSS class ekleyerek genişlik ayarla
                 editor.commands.command(({ tr, state }) => {
@@ -353,7 +353,7 @@ export default function DocumentToolbar({
           </select>
         </div>
       )}
-      
+
       <div className="toolbar-separator"></div>
 
       <div className="toolbar-group">
@@ -444,42 +444,10 @@ export default function DocumentToolbar({
           </div>
           <div className="toolbar-separator"></div>
           <div className="toolbar-group" style={{ gap: '4px' }}>
-            <button
-              onClick={() => {
-                console.log('➖ Zoom out clicked, current zoom:', zoom);
-                if (setZoom) setZoom(Math.max(50, zoom - 10));
-              }}
-              className="toolbar-btn"
-              title="Zoom out"
-            >
-              −
-            </button>
-            <span style={{ fontSize: '11px', color: '#525252', minWidth: '40px', textAlign: 'center' }}>
-              {zoom}%
+            {/* Zoom kontrolleri kaldırıldı - Otomatik fit yapılacak */}
+            <span style={{ fontSize: '11px', color: '#a3a3a3', minWidth: '40px', textAlign: 'center', userSelect: 'none' }}>
+              Otomatik
             </span>
-            <button
-              onClick={() => {
-                console.log('➕ Zoom in clicked, current zoom:', zoom);
-                if (setZoom) setZoom(Math.min(200, zoom + 10));
-              }}
-              className="toolbar-btn"
-              title="Zoom in"
-            >
-              +
-            </button>
-            <button
-              onClick={() => {
-                console.log('🔄 Reset zoom clicked, current zoom:', zoom, 'setZoom:', typeof setZoom);
-                if (setZoom) {
-                  setZoom(100);
-                  console.log('✅ Zoom reset to 100');
-                }
-              }}
-              className="toolbar-btn-extended"
-              title="Reset zoom"
-            >
-              Reset
-            </button>
           </div>
         </>
       )}

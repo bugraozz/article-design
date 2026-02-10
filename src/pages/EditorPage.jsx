@@ -88,7 +88,39 @@ export default function EditorPage() {
   const [showGuides, setShowGuides] = useState(true);
   const [gridSize, setGridSize] = useState(10);
   const [snapEnabled, setSnapEnabled] = useState(true);
+  // Zoom state - Otomatik hesaplanacak
   const [zoom, setZoom] = useState(100);
+  const scrollContainerRef = useRef(null);
+
+  // Otomatik Zoom Hesaplama (Fit Width)
+  useEffect(() => {
+    const handleResize = () => {
+      if (scrollContainerRef.current) {
+        const containerWidth = scrollContainerRef.current.clientWidth;
+        const targetWidth = 794 + 80; // A4 (794px) + Margins (40px sağı solu)
+
+        let newZoom = 100;
+
+        // Eğer container A4'ten küçükse küçült
+        if (containerWidth < targetWidth) {
+          newZoom = Math.floor((containerWidth / targetWidth) * 100);
+        }
+        // Eğer container çok büyükse de 100'de tut (veya büyütmek istersen newZoom'u ona göre ayarla)
+        // Kullanıcı "yakınlaştırmayı kaldır" dediği için 100'ü geçirmeyelim.
+
+        // Gereksiz render'ı önlemek için sadece değişirse güncelle
+        setZoom(prev => Math.abs(prev - newZoom) > 1 ? newZoom : prev);
+      }
+    };
+
+    // İlk hesaplama
+    setTimeout(handleResize, 100);
+
+    const observer = new ResizeObserver(handleResize);
+    if (scrollContainerRef.current) observer.observe(scrollContainerRef.current);
+
+    return () => observer.disconnect();
+  }, [cleanView]); // Layout değişince tekrar hesapla
 
   // Editor instance (tablo/metin özellikleri için)
   const [currentEditor, setCurrentEditor] = useState(null);
@@ -1694,13 +1726,20 @@ export default function EditorPage() {
   // ---------------------------
   return (
     <div
-      className="flex flex-col w-full h-screen"
+      className="h-screen w-full flex flex-col bg-[#F9FAFB] overflow-hidden font-sans text-slate-900 selection:bg-rose-100 selection:text-rose-900 relative"
       onClick={() => {
         // sayfanın boş yerine tıklayınca inline edit ve context menü kapansın
         setInlineEditingId(null);
         setContextMenu((prev) => ({ ...prev, visible: false }));
       }}
     >
+      {/* Background Pattern - Professional Dot Grid */}
+      <div className="absolute inset-0 z-0 opacity-[0.4]" style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+
+      {/* Subtle Gradient Mesh for Vibrancy */}
+      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-white via-transparent to-transparent pointer-events-none z-0"></div>
+      <div className="absolute -top-[200px] -right-[200px] w-[600px] h-[600px] bg-rose-100/30 rounded-full blur-[120px] pointer-events-none z-0"></div>
+      <div className="absolute top-[40%] -left-[200px] w-[500px] h-[500px] bg-blue-50/40 rounded-full blur-[100px] pointer-events-none z-0"></div>
       {/* PDF VIEWER MODE - Adobe Embed API ile birebir görüntüleme */}
       {pdfViewerMode && pdfFile ? (
         <div className="w-full h-full flex flex-col">
@@ -1741,60 +1780,66 @@ export default function EditorPage() {
             isSavingProject={isSavingProject}
           />
 
-          <div className="flex flex-row grow">
+          <div className="flex-1 flex overflow-hidden relative z-10">
             {/* SOL SAYFA PANELİ - Temiz görünüm dışında göster */}
             {!cleanView && (
-              <PagesPanel
-                pages={pages}
-                activePageId={activePageId}
-                onSelectPage={(id) => {
-                  setActivePageId(id);
-                  setActiveOverlay(null);
-                  setInlineEditingId(null);
-                  setContextMenu((prev) => ({ ...prev, visible: false }));
+              <div className="w-64 bg-white/70 backdrop-blur-xl border-r border-slate-200/50 flex flex-col shadow-[1px_0_10px_rgba(0,0,0,0.02)] transition-all duration-300 z-20">
+                <PagesPanel
+                  pages={pages}
+                  activePageId={activePageId}
+                  onSelectPage={(id) => {
+                    setActivePageId(id);
+                    setActiveOverlay(null);
+                    setInlineEditingId(null);
+                    setContextMenu((prev) => ({ ...prev, visible: false }));
 
-                  // Sayfaya scroll yap
-                  setTimeout(() => {
-                    const pageElement = document.getElementById(`page-${id}`);
-                    if (pageElement) {
-                      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // Sayfaya scroll yap
+                    setTimeout(() => {
+                      const pageElement = document.getElementById(`page-${id}`);
+                      if (pageElement) {
+                        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 50);
+                  }}
+                  onAddPage={addPage}
+                  onChangePageMode={(pageId, newMode) => {
+                    setPages((prev) =>
+                      prev.map((p) =>
+                        p.id === pageId
+                          ? { ...p, mode: newMode }
+                          : p
+                      )
+                    );
+                  }}
+                  onDeletePage={(pageId) => {
+                    // En az 1 sayfa kalmalı
+                    if (pages.length <= 1) {
+                      alert('Son sayfayı silemezsiniz!');
+                      return;
                     }
-                  }, 50);
-                }}
-                onAddPage={addPage}
-                onChangePageMode={(pageId, newMode) => {
-                  setPages((prev) =>
-                    prev.map((p) =>
-                      p.id === pageId
-                        ? { ...p, mode: newMode }
-                        : p
-                    )
-                  );
-                }}
-                onDeletePage={(pageId) => {
-                  // En az 1 sayfa kalmalı
-                  if (pages.length <= 1) {
-                    alert('Son sayfayı silemezsiniz!');
-                    return;
-                  }
 
-                  // Sayfayı sil
-                  setPages((prev) => prev.filter((p) => p.id !== pageId));
+                    // Sayfayı sil
+                    setPages((prev) => prev.filter((p) => p.id !== pageId));
 
-                  // Aktif sayfa silindiyse, bir önceki sayfayı seç
-                  if (activePageId === pageId) {
-                    const currentIndex = pages.findIndex((p) => p.id === pageId);
-                    const newActivePage = pages[currentIndex - 1] || pages[currentIndex + 1];
-                    if (newActivePage) {
-                      setActivePageId(newActivePage.id);
+                    // Aktif sayfa silindiyse, bir önceki sayfayı seç
+                    if (activePageId === pageId) {
+                      const currentIndex = pages.findIndex((p) => p.id === pageId);
+                      const newActivePage = pages[currentIndex - 1] || pages[currentIndex + 1];
+                      if (newActivePage) {
+                        setActivePageId(newActivePage.id);
+                      }
                     }
-                  }
-                }}
-              />
+                  }}
+                />
+              </div>
             )}
 
             {/* TÜM SAYFALAR - Scroll ile görünür */}
-            <div id="pages-scroll-container" className="flex-1 overflow-y-auto bg-gray-100">
+            <div
+              ref={scrollContainerRef}
+              id="pages-scroll-container"
+              className="flex-1 overflow-y-auto bg-neutral-100/50 relative scroll-smooth bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"
+            >
               {/* Sticky Toolbar - Belge Modu Kontrolleri */}
               {!cleanView && activePage?.mode === "document" && currentEditor && (
                 <div className="sticky top-0 z-[5] bg-white border-b border-gray-200 shadow-lg w-full">
@@ -2155,9 +2200,9 @@ export default function EditorPage() {
                   <div
                     key={page.id}
                     id={`page-${page.id}`}
-                    className={`relative transition-all ${!cleanView && page.id === activePageId
-                      ? "ring-4 ring-blue-400 ring-offset-4"
-                      : !cleanView && "hover:ring-2 hover:ring-gray-300 hover:ring-offset-2"
+                    className={`relative transition-all duration-200 ${!cleanView && page.id === activePageId
+                      ? "ring-2 ring-rose-500 ring-offset-4 shadow-xl scale-[1.02]"
+                      : !cleanView && "hover:ring-2 hover:ring-neutral-200 hover:ring-offset-2 hover:shadow-md"
                       }`}
                     onClick={() => {
                       if (!cleanView && page.id !== activePageId) {
@@ -2214,13 +2259,22 @@ export default function EditorPage() {
 
                     {/* Belge Modu Editör */}
                     {page.mode === "document" && (
-                      <div className="bg-white shadow-2xl" style={{ overflow: "auto", maxWidth: '100%', maxHeight: '100%' }}>
+                      <div
+                        className="bg-white shadow-2xl origin-center transition-transform duration-200"
+                        style={{
+                          // Zoom scale uygula
+                          transform: `scale(${zoom / 100})`,
+                          // Sayfa boyutları sabit
+                          width: 794,
+                          height: 1123
+                        }}
+                      >
                         {/* Eğer import edilmiş PDF/Word ise (absolute positioning HTML içeriyorsa) */}
                         {page.documentContent && page.documentContent.includes('position: absolute') ? (
                           <PdfViewer htmlContent={page.documentContent} />
                         ) : (
                           // Normal TipTap editör - A4 boyutunda
-                          <div style={{ width: 794, height: 1123 }}>
+                          <div className="h-full w-full">
                             {page.id === activePageId ? (
                               <DocumentEditor
                                 content={page.documentContent || ""}
@@ -2260,10 +2314,12 @@ export default function EditorPage() {
 
             {/* SAĞ MAKALE AYARLARI PANELİ - Her zaman göster (temiz görünüm hariç) */}
             {!cleanView && (
-              <ArticleSettingsPanel
-                settings={articleSettings}
-                onSettingsChange={handleArticleSettingsChange}
-              />
+              <div className="w-80 bg-white/70 backdrop-blur-xl border-l border-slate-200/50 flex flex-col overflow-y-auto shadow-[-1px_0_10px_rgba(0,0,0,0.02)] z-20 h-full">
+                <ArticleSettingsPanel
+                  settings={articleSettings}
+                  onSettingsChange={handleArticleSettingsChange}
+                />
+              </div>
             )}
           </div>
 

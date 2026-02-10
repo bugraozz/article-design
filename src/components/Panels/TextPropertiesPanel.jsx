@@ -14,6 +14,7 @@ import {
   X,
   Sigma,
   PenTool,
+  Highlighter
 } from "lucide-react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -63,7 +64,7 @@ export default function TextPropertiesPanel({
           lastColumnResizable: true,
           HTMLAttributes: {
             class: "tiptap-table",
-            style: "border-collapse: collapse; width: 100%; border: 1px solid #d1d5db;",
+            style: "border-collapse: collapse; width: 100%; border: 1px solid #e5e7eb;",
           },
         }),
         TableRow,
@@ -77,7 +78,6 @@ export default function TextPropertiesPanel({
         onChange(editor.getHTML());
       },
       onSelectionUpdate: ({ editor }) => {
-        // Her cursor hareketi sonrası editörü parent'a bildir
         if (onEditorReady) {
           onEditorReady(editor);
         }
@@ -86,19 +86,20 @@ export default function TextPropertiesPanel({
     [overlayId]
   );
 
-  // Editor hazır olduğunda parent'a bildir
   useEffect(() => {
     if (editor && onEditorReady) {
       onEditorReady(editor);
     }
   }, [editor, onEditorReady]);
 
-  // Content değişince editor'ü güncelle
   useEffect(() => {
     if (editor && overlayHtml && editor.getHTML() !== overlayHtml) {
-      editor.commands.setContent(overlayHtml);
+      // Sadece focus yoksa güncelle ki yazarken atlama yapmasın
+      if (!editor.isFocused) {
+        editor.commands.setContent(overlayHtml);
+      }
     }
-  }, [overlayId, editor]);
+  }, [overlayId, editor]); // overlayHtml dependency removed to prevent loop
 
   const handleFontSize = (size) => {
     editor?.chain().focus().setMark("fontSize", { size }).run();
@@ -106,33 +107,12 @@ export default function TextPropertiesPanel({
 
   const handleTextColor = (color) => {
     if (!editor) return;
-    
     const { from, to } = editor.state.selection;
-    
-    // Eğer metin seçili değilse
     if (from === to) {
       alert("Lütfen rengi değiştirmek istediğiniz metni seçin!");
       return;
     }
-    
-    // Seçili metni al
-    const selectedText = editor.state.doc.textBetween(from, to, "");
-    
-    // Mevcut HTML'i al
-    const currentHtml = editor.getHTML();
-    
-    // Seçili metni <span> ile wrap et
-    // SADECE İLK EŞLEŞMEYİ değiştir
-    const newHtml = currentHtml.replace(
-      selectedText,
-      `<span style="color: ${color}">${selectedText}</span>`
-    );
-    
-    // TipTap'ı bypass et, doğrudan onChange ile parent'a gönder
-    onChange(newHtml);
-    
-    // Editor'ü güncellemek için setContent kullan
-    editor.commands.setContent(newHtml);
+    editor.chain().focus().setColor(color).run();
   };
 
   const handleTextAlign = (align) => {
@@ -142,294 +122,244 @@ export default function TextPropertiesPanel({
   if (!editor) return null;
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 shadow-lg flex flex-col h-full">
-      {/* Başlık */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800">Metin Özellikleri</h3>
+    <div className="w-full h-full flex flex-col">
+      {/* Başlık - Professional Gradient Header */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-rose-500 to-red-600 border-b border-rose-500/20 shadow-[0_4px_12px_rgba(225,29,72,0.15)]">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 bg-white/20 backdrop-blur-md text-white rounded-xl border border-white/30 shadow-inner">
+            <Type size={18} className="drop-shadow-sm" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white tracking-tight">Metin Düzenle</h3>
+            <p className="text-[10px] text-rose-100/80 font-medium">İçerik stili ve biçimlendirme</p>
+          </div>
+        </div>
         <button
           onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded transition"
+          className="p-1.5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg transition-all duration-200"
         >
-          <X size={20} className="text-gray-600" />
+          <X size={18} />
         </button>
       </div>
 
       {/* İçerik */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* EDITOR ALANI - Metin yazılacak yer */}
-        <div className="border border-gray-300 rounded p-3 bg-gray-50 min-h-32">
-          <EditorContent 
-            editor={editor}
-            className="prose prose-sm max-w-none focus:outline-none"
-            style={{
-              fontSize: "14px",
-              lineHeight: "1.5",
-            }}
-          />
-        </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar pb-20">
 
-        {/* Stil Düğmeleri */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Stil
-          </label>
-          <div className="grid grid-cols-4 gap-2">
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-2 rounded border transition ${
-                editor.isActive("bold")
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Kalın"
-            >
-              <Bold size={18} />
-            </button>
-
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`p-2 rounded border transition ${
-                editor.isActive("italic")
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="İtalik"
-            >
-              <Italic size={18} />
-            </button>
-
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={`p-2 rounded border transition ${
-                editor.isActive("underline")
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Altı Çizili"
-            >
-              <Underline size={18} />
-            </button>
-
-            <button
-              onClick={() => {
-                editor.chain().focus().toggleHeading({ level: 2 }).run();
-                // onChange çağırarak TextOverlay'i güncelle
-                setTimeout(() => {
-                  onChange(editor.getHTML());
-                  
-                  const editorElement = document.querySelector('[contenteditable="true"]');
-                  if (editorElement && editorElement.parentElement) {
-                    editorElement.parentElement.style.setProperty("--title-color", titleColor || "#1f2937");
-                    editorElement.parentElement.style.setProperty("--title-font-size", titleFontSize ? `${titleFontSize}px` : "24px");
-                  }
-                }, 10);
+        {/* EDITOR ALANI */}
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide">İçerik</label>
+          <div className="border border-slate-200/60 rounded-xl p-3 bg-white/50 backdrop-blur-sm shadow-sm min-h-[120px] focus-within:ring-2 focus-within:ring-rose-500/20 focus-within:border-rose-300 transition-all duration-300">
+            <EditorContent
+              editor={editor}
+              className="prose prose-sm max-w-none focus:outline-none"
+              style={{
+                fontSize: "14px",
+                lineHeight: "1.6",
               }}
-              className={`p-2 rounded border transition ${
-                editor.isActive("heading", { level: 2 })
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Başlık"
-            >
-              <Heading2 size={18} />
-            </button>
+            />
           </div>
         </div>
 
-        {/* Font Boyutu */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Font Boyutu
-          </label>
-          <div className="space-y-2">
-            <div className="grid grid-cols-4 gap-2">
-              {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map(
-                (size) => (
-                  <button
-                    key={size}
-                    onClick={() => handleFontSize(size)}
-                    className="px-3 py-2 bg-gray-50 border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium transition active:bg-blue-100"
-                  >
-                    {size.replace("px", "")}
-                  </button>
-                )
-              )}
-            </div>
-            <p className="text-xs text-gray-500">💡 Metni seçin, sonra boyutu tıkla</p>
-          </div>
-        </div>
+        {/* Araç Grupları */}
+        <div className="space-y-4">
 
-        {/* Renk */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Yazı Rengi
-          </label>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                defaultValue="#000000"
-                onChange={(e) => {
-                  handleTextColor(e.target.value);
-                }}
-                className="w-16 h-10 border border-gray-300 rounded cursor-pointer"
-                title="Seçili metin rengini değiştir"
-              />
+          {/* Stil Düğmeleri */}
+          <div>
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Temel Stil</label>
+            <div className="flex gap-2 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
               <button
-                onClick={() => handleTextColor("#000000")}
-                className="px-3 py-2 bg-gray-50 border border-gray-300 rounded hover:bg-gray-100 text-sm transition"
-                title="Siyaha sıfırla"
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive("bold")
+                  ? "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg shadow-rose-500/25 border-transparent scale-105"
+                  : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent hover:border-slate-200/60 hover:shadow-sm"
+                  }`}
+                title="Kalın"
+              >
+                <Bold size={16} className="mx-auto" />
+              </button>
+
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive("italic")
+                  ? "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg shadow-rose-500/25 border-transparent scale-105"
+                  : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent hover:border-slate-200/60 hover:shadow-sm"
+                  }`}
+                title="İtalik"
+              >
+                <Italic size={16} className="mx-auto" />
+              </button>
+
+              <button
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive("underline")
+                  ? "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg shadow-rose-500/25 border-transparent scale-105"
+                  : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent hover:border-slate-200/60 hover:shadow-sm"
+                  }`}
+                title="Altı Çizili"
+              >
+                <Underline size={16} className="mx-auto" />
+              </button>
+
+              <button
+                onClick={() => {
+                  editor.chain().focus().toggleHeading({ level: 2 }).run();
+                  setTimeout(() => {
+                    onChange(editor.getHTML());
+                  }, 10);
+                }}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive("heading", { level: 2 })
+                  ? "bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg shadow-slate-900/30 border-transparent scale-105"
+                  : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent hover:border-slate-200/60 hover:shadow-sm"
+                  }`}
+                title="Başlık Yap"
+              >
+                <Heading2 size={16} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          {/* Hizalama */}
+          <div>
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Hizalama</label>
+            <div className="flex gap-2 bg-slate-100/50 p-1.5 rounded-xl border border-slate-200/60 shadow-inner">
+              <button
+                onClick={() => handleTextAlign("left")}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive({ textAlign: "left" })
+                  ? "bg-white text-rose-600 shadow-md border-rose-100 scale-105"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+                  }`}
+              >
+                <AlignLeft size={16} className="mx-auto" />
+              </button>
+              <button
+                onClick={() => handleTextAlign("center")}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive({ textAlign: "center" })
+                  ? "bg-white text-rose-600 shadow-md border-rose-100 scale-105"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+                  }`}
+              >
+                <AlignCenter size={16} className="mx-auto" />
+              </button>
+              <button
+                onClick={() => handleTextAlign("right")}
+                className={`flex-1 p-2 rounded-lg transition-all duration-300 ${editor.isActive({ textAlign: "right" })
+                  ? "bg-white text-rose-600 shadow-md border-rose-100 scale-105"
+                  : "text-slate-400 hover:text-slate-600 hover:bg-white/50"
+                  }`}
+              >
+                <AlignRight size={16} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          {/* Listeler */}
+          <div>
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Listeler</label>
+            <div className="flex gap-2 bg-neutral-50 p-1 rounded-lg border border-neutral-100">
+              <button
+                onClick={() => editor.chain().focus().toggleBulletList().run()}
+                className={`flex-1 p-2 rounded-md transition-all ${editor.isActive("bulletList")
+                  ? "bg-neutral-100 text-neutral-900 shadow-inner border border-neutral-200"
+                  : "text-neutral-500 hover:bg-white hover:text-neutral-700"
+                  }`}
+              >
+                <List size={16} className="mx-auto" />
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                className={`flex-1 p-2 rounded-md transition-all ${editor.isActive("orderedList")
+                  ? "bg-neutral-100 text-neutral-900 shadow-inner border border-neutral-200"
+                  : "text-neutral-500 hover:bg-white hover:text-neutral-700"
+                  }`}
+              >
+                <ListOrdered size={16} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+
+          {/* Font Boyutu */}
+          <div>
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Font Boyutu</label>
+            <div className="grid grid-cols-4 gap-2">
+              {["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((size) => (
+                <button
+                  key={size}
+                  onClick={() => handleFontSize(size)}
+                  className="py-1.5 bg-white border border-neutral-200 rounded hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 text-xs font-medium transition text-neutral-600"
+                >
+                  {size.replace("px", "")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Renk Seçimi */}
+          <div>
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Renk & Vurgu</label>
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 flex items-center gap-2 border border-neutral-200 rounded-lg p-1.5 bg-white">
+                <input
+                  type="color"
+                  defaultValue="#000000"
+                  onChange={(e) => handleTextColor(e.target.value)}
+                  className="w-8 h-8 rounded-md cursor-pointer border-none bg-transparent"
+                />
+                <span className="text-xs text-neutral-500">Yazı</span>
+              </div>
+              <div className="flex-1 flex items-center gap-2 border border-neutral-200 rounded-lg p-1.5 bg-white">
+                <input
+                  type="color"
+                  defaultValue="#FFFF00"
+                  onChange={(e) => {
+                    editor.chain().focus().toggleHighlight({ color: e.target.value }).run();
+                  }}
+                  className="w-8 h-8 rounded-md cursor-pointer border-none bg-transparent"
+                />
+                <span className="text-xs text-neutral-500">Vurgu</span>
+              </div>
+            </div>
+
+            {/* Hızlı Renkler */}
+            <div className="flex gap-1.5 flex-wrap">
+              {["#000000", "#DC2626", "#2563EB", "#16A34A", "#CA8A04", "#9333EA"].map((color) => (
+                <button
+                  key={color}
+                  onClick={() => handleTextColor(color)}
+                  className="w-6 h-6 rounded-full border border-neutral-100 hover:scale-110 transition shadow-sm"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+              <button
+                onClick={() => handleTextColor('#000000')}
+                className="h-6 px-2 rounded-full border border-neutral-200 bg-neutral-50 text-[10px] text-neutral-600 hover:bg-neutral-100 flex items-center"
               >
                 Sıfırla
               </button>
             </div>
-            {/* Hızlı Renk Seçenekleri */}
-            <div className="flex gap-2 flex-wrap">
-              {["#000000", "#FFFFFF", "#FF0000", "#00AA00", "#0000FF", "#FF8800", "#9933FF", "#FF1493"].map((color) => (
-                <button
-                  key={color}
-                  onClick={() => handleTextColor(color)}
-                  className="w-8 h-8 rounded border-2 border-gray-300 hover:border-gray-600 transition"
-                  style={{ backgroundColor: color }}
-                  title={`${color} rengini seç`}
-                />
-              ))}
+          </div>
+
+          {/* Matematik */}
+          <div className="pt-2 border-t border-neutral-200">
+            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wide mb-2 block">Matematik</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onOpenEquationEditor}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 bg-gradient-to-br from-violet-500 to-purple-600 border border-violet-400/30 rounded-xl hover:shadow-lg hover:shadow-violet-500/20 text-xs font-bold text-white transition-all duration-300 hover:-translate-y-0.5"
+              >
+                <Sigma size={14} />
+                Denklem
+              </button>
+
+              <button
+                onClick={onOpenMathSymbolPanel}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 text-xs font-bold text-orange-700 transition"
+              >
+                <PenTool size={14} />
+                Sembol
+              </button>
             </div>
-            <p className="text-xs text-gray-500">💡 Metni seçin, sonra rengi değiştirin</p>
           </div>
-        </div>
 
-        {/* Hizalama */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Hizalama
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => handleTextAlign("left")}
-              className={`p-2 rounded border transition ${
-                editor.isActive({ textAlign: "left" })
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Sola Hizala"
-            >
-              <AlignLeft size={18} />
-            </button>
-
-            <button
-              onClick={() => handleTextAlign("center")}
-              className={`p-2 rounded border transition ${
-                editor.isActive({ textAlign: "center" })
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Ortaya Hizala"
-            >
-              <AlignCenter size={18} />
-            </button>
-
-            <button
-              onClick={() => handleTextAlign("right")}
-              className={`p-2 rounded border transition ${
-                editor.isActive({ textAlign: "right" })
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Sağa Hizala"
-            >
-              <AlignRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Listeler */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Listeler
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className={`p-2 rounded border transition ${
-                editor.isActive("bulletList")
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Madde İşareti"
-            >
-              <List size={18} />
-            </button>
-
-            <button
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              className={`p-2 rounded border transition ${
-                editor.isActive("orderedList")
-                  ? "bg-blue-100 border-blue-400"
-                  : "bg-gray-50 border-gray-300 hover:bg-gray-100"
-              }`}
-              title="Numaralandırılmış"
-            >
-              <ListOrdered size={18} />
-            </button>
-          </div>
-        </div>
-
-        {/* Ek Seçenekler */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Vurgula
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="color"
-              onInput={(e) => {
-                editor
-                  .chain()
-                  .focus()
-                  .toggleHighlight({ color: e.target.value })
-                  .run();
-              }}
-              defaultValue="#FFFF00"
-              className="w-full h-10 border border-gray-300 rounded cursor-pointer"
-              title="Vurgu Rengi"
-            />
-            <button
-              onClick={() => editor.chain().focus().toggleHighlight().run()}
-              className={`px-3 py-2 bg-gray-50 border border-gray-300 rounded hover:bg-gray-100 text-sm transition flex-1 ${
-                editor.isActive("highlight") ? "bg-blue-100 border-blue-400" : ""
-              }`}
-            >
-              Kapat
-            </button>
-          </div>
-        </div>
-
-        {/* Matematik */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Matematik
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={onOpenEquationEditor}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-purple-50 border border-purple-300 rounded hover:bg-purple-100 text-sm font-medium text-purple-700 transition"
-              title="Denklem Ekle"
-            >
-              <Sigma size={18} />
-              Denklem
-            </button>
-
-            <button
-              onClick={onOpenMathSymbolPanel}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-300 rounded hover:bg-indigo-100 text-sm font-medium text-indigo-700 transition"
-              title="Sembol Ekle"
-            >
-              <PenTool size={18} />
-              Sembol
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">💡 İmleci nereye koyduysan oraya ekler</p>
         </div>
       </div>
     </div>
