@@ -42,6 +42,15 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const PUBLIC_UPLOADS_DIR = path.join(__dirname, 'public_uploads');
+const SAVED_PROJECTS_DIR = path.join(__dirname, 'saved_projects');
+const UPLOAD_CLEANUP_TTL_HOURS = Number(process.env.UPLOAD_CLEANUP_TTL_HOURS || 24);
+const PROJECT_CLEANUP_TTL_HOURS = Number(process.env.PROJECT_CLEANUP_TTL_HOURS || 24);
+const CLEANUP_INTERVAL_MINUTES = Number(process.env.CLEANUP_INTERVAL_MINUTES || 60);
+const CLEANUP_TTL_MS = Math.max(1, UPLOAD_CLEANUP_TTL_HOURS) * 60 * 60 * 1000;
+const PROJECT_CLEANUP_TTL_MS = Math.max(1, PROJECT_CLEANUP_TTL_HOURS) * 60 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = Math.max(1, CLEANUP_INTERVAL_MINUTES) * 60 * 1000;
 
 // Middleware
 app.use(cors());
@@ -51,11 +60,10 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // File upload configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     }
-    cb(null, uploadDir);
+    cb(null, UPLOADS_DIR);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname);
@@ -67,6 +75,7 @@ const upload = multer({ storage });
 // import * as db from './db/index.js'; // DB removed
 const fileStore = {}; // In-memory store for file metadata
 const wopiLocks = {}; // in-memory locks (ephemeral)
+const pdfSessionStore = {}; // in-memory store for PDF viewer cleanup tokens
 
 function generateToken() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
@@ -93,8 +102,92 @@ function requireWopiAuth(req, res, next) {
   }
 }
 
+function safeUnlink(filePath) {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return true;
+    }
+  } catch (err) {
+    console.warn('⚠️ File delete failed:', filePath, err.message);
+  }
+  return false;
+}
+
+function cleanupStaleFiles() {
+  const now = Date.now();
+  let deletedCount = 0;
+
+  [
+    { dirPath: UPLOADS_DIR, ttlMs: CLEANUP_TTL_MS },
+    { dirPath: PUBLIC_UPLOADS_DIR, ttlMs: CLEANUP_TTL_MS },
+    { dirPath: SAVED_PROJECTS_DIR, ttlMs: PROJECT_CLEANUP_TTL_MS },
+  ].forEach(({ dirPath, ttlMs }) => {
+    try {
+      if (!fs.existsSync(dirPath)) return;
+
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isFile()) continue;
+
+        const filePath = path.join(dirPath, entry.name);
+        let stats;
+        try {
+          stats = fs.statSync(filePath);
+        } catch {
+          continue;
+        }
+
+        if ((now - stats.mtimeMs) > ttlMs) {
+          if (safeUnlink(filePath)) deletedCount += 1;
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Cleanup scan failed:', dirPath, err.message);
+    }
+  });
+
+  Object.keys(fileStore).forEach((fileId) => {
+    const item = fileStore[fileId];
+    const lastTouchedAt = new Date(item?.last_accessed_at || item?.updated_at || item?.created_at || 0).getTime();
+    const fileMissing = !item?.path || !fs.existsSync(item.path);
+    const isExpired = Number.isFinite(lastTouchedAt) && lastTouchedAt > 0 && (now - lastTouchedAt) > CLEANUP_TTL_MS;
+
+    if (fileMissing || isExpired) {
+      safeUnlink(item?.path);
+      delete fileStore[fileId];
+      delete wopiLocks[fileId];
+      deletedCount += 1;
+    }
+  });
+
+  Object.keys(pdfSessionStore).forEach((sessionToken) => {
+    const session = pdfSessionStore[sessionToken];
+    const lastTouchedAt = new Date(session?.last_accessed_at || session?.created_at || 0).getTime();
+    const fileMissing = !session?.path || !fs.existsSync(session.path);
+    const isExpired = Number.isFinite(lastTouchedAt) && lastTouchedAt > 0 && (now - lastTouchedAt) > CLEANUP_TTL_MS;
+
+    if (fileMissing || isExpired) {
+      safeUnlink(session?.path);
+      delete pdfSessionStore[sessionToken];
+      deletedCount += 1;
+    }
+  });
+
+  if (deletedCount > 0) {
+    console.log(`🧹 Cleanup completed: ${deletedCount} stale item(s) removed`);
+  }
+}
+
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(PUBLIC_UPLOADS_DIR)) fs.mkdirSync(PUBLIC_UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(SAVED_PROJECTS_DIR)) fs.mkdirSync(SAVED_PROJECTS_DIR, { recursive: true });
+cleanupStaleFiles();
+const cleanupTimer = setInterval(cleanupStaleFiles, CLEANUP_INTERVAL_MS);
+cleanupTimer.unref?.();
+
 // Serve *public* uploads (PDF viewer etc.) from /public/uploads
-app.use('/public/uploads', express.static(path.join(__dirname, 'public_uploads')));
+app.use('/public/uploads', express.static(PUBLIC_UPLOADS_DIR));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -111,11 +204,20 @@ app.post('/api/upload-pdf', upload.single('file'), (req, res) => {
     console.log('📄 PDF uploaded for viewing:', req.file.originalname);
 
     // Move file to public_uploads so it's served at /public/uploads
-    const publicDir = path.join(__dirname, 'public_uploads');
+    const publicDir = PUBLIC_UPLOADS_DIR;
     if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
     const destName = `${Date.now()}-${req.file.originalname}`;
     const destPath = path.join(publicDir, destName);
     fs.renameSync(req.file.path, destPath);
+
+    const cleanupToken = generateToken();
+    pdfSessionStore[cleanupToken] = {
+      token: cleanupToken,
+      path: destPath,
+      filename: req.file.originalname,
+      created_at: new Date(),
+      last_accessed_at: new Date(),
+    };
 
     // Use localhost for browser-facing URLs (BACKEND_URL is for Docker containers like Collabora)
     const fileUrl = `http://localhost:${PORT}/public/uploads/${destName}`;
@@ -123,12 +225,35 @@ app.post('/api/upload-pdf', upload.single('file'), (req, res) => {
     res.json({
       success: true,
       url: fileUrl,
-      filename: req.file.originalname
+      filename: req.file.originalname,
+      cleanupToken,
     });
 
   } catch (err) {
     console.error('❌ PDF upload error:', err);
     res.status(500).json({ error: 'PDF upload failed', details: err.message });
+  }
+});
+
+app.post('/api/pdf/session-end', (req, res) => {
+  try {
+    const cleanupToken = req.query.cleanup_token || req.headers['x-cleanup-token'];
+    if (!cleanupToken) {
+      return res.status(400).json({ error: 'cleanup_token required' });
+    }
+
+    const session = pdfSessionStore[cleanupToken];
+    if (!session) {
+      return res.json({ success: true, deleted: false, reason: 'session not found' });
+    }
+
+    const deleted = safeUnlink(session.path);
+    delete pdfSessionStore[cleanupToken];
+
+    res.json({ success: true, deleted });
+  } catch (err) {
+    console.error('❌ PDF session cleanup error:', err);
+    res.status(500).json({ error: 'PDF session cleanup failed', details: err.message });
   }
 });
 
@@ -147,7 +272,7 @@ app.post('/api/html-to-pdf', async (req, res) => {
     console.log('📄 Converting HTML to PDF using Adobe SDK...');
 
     // Ensure uploads directory exists
-    const uploadsDir = path.join(__dirname, 'uploads');
+    const uploadsDir = UPLOADS_DIR;
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -900,7 +1025,6 @@ app.post('/api/import-word', upload.single('file'), async (req, res) => {
 // ===== PROJE KAYDET / GERİ YÜKLE =====
 
 // Proje kayıt dizini
-const SAVED_PROJECTS_DIR = path.join(__dirname, 'saved_projects');
 if (!fs.existsSync(SAVED_PROJECTS_DIR)) {
   fs.mkdirSync(SAVED_PROJECTS_DIR, { recursive: true });
   console.log('📁 saved_projects dizini oluşturuldu');
@@ -947,6 +1071,7 @@ app.post('/api/projects/save', async (req, res) => {
       institutions: institutions || [],
       contacts: contacts || [],
       savedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + PROJECT_CLEANUP_TTL_MS).toISOString(),
       version: '1.0'
     };
 
@@ -985,6 +1110,13 @@ app.get('/api/projects/:code', async (req, res) => {
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Bu kodla kayıtlı bir proje bulunamadı.' });
+    }
+
+    const stats = fs.statSync(filePath);
+    const isExpired = (Date.now() - stats.mtimeMs) > PROJECT_CLEANUP_TTL_MS;
+    if (isExpired) {
+      safeUnlink(filePath);
+      return res.status(404).json({ error: 'Bu proje kodunun süresi dolmuş (24 saat) ve otomatik silinmiştir.' });
     }
 
     const projectData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -1077,7 +1209,8 @@ app.post('/api/upload-for-collabora', upload.single('file'), async (req, res) =>
       name: req.file.originalname,
       size: stats.size,
       version: Date.now().toString(),
-      created_at: new Date()
+      created_at: new Date(),
+      last_accessed_at: new Date()
     };
 
     const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
@@ -1116,6 +1249,22 @@ app.post('/api/upload-for-collabora', upload.single('file'), async (req, res) =>
   }
 });
 
+app.post('/api/collabora/session-end', requireWopiAuth, (req, res) => {
+  try {
+    const { fileId } = req.wopi;
+    const file = fileStore[fileId];
+
+    const deleted = safeUnlink(file?.path);
+    delete fileStore[fileId];
+    delete wopiLocks[fileId];
+
+    res.json({ success: true, fileId, deleted });
+  } catch (err) {
+    console.error('❌ session-end cleanup error:', err);
+    res.status(500).json({ error: 'session-end cleanup failed', details: err.message });
+  }
+});
+
 // WOPI endpoints (minimal implementation for Collabora CODE)
 
 // CheckFileInfo
@@ -1125,6 +1274,9 @@ app.get('/wopi/files/:id', requireWopiAuth, async (req, res) => {
 
     const file = fileStore[fileId];
     if (!file) return res.status(404).json({ error: 'file not found' });
+
+    file.last_accessed_at = new Date();
+    fileStore[fileId] = file;
 
     res.json({
       BaseFileName: file.name,
@@ -1150,6 +1302,9 @@ app.get('/wopi/files/:id/contents', requireWopiAuth, async (req, res) => {
 
     const file = fileStore[fileId];
     if (!file) return res.status(404).end();
+
+    file.last_accessed_at = new Date();
+    fileStore[fileId] = file;
 
     res.setHeader('Content-Type', 'application/octet-stream');
     const stream = fs.createReadStream(file.path);
@@ -1187,6 +1342,7 @@ app.put('/wopi/files/:id/contents', requireWopiAuth, (req, res) => {
       file.size = stats.size;
       file.version = Date.now().toString();
       file.updated_at = new Date();
+      file.last_accessed_at = new Date();
 
       fileStore[fileId] = file;
 

@@ -9,7 +9,7 @@
   border-radius: 8px;
   display: flex;
   gap: 6px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 9999;
 }
 
@@ -31,9 +31,16 @@
   letter-spacing: 0.3px;
 }
 
+/* Selection styling - metin rengini korumasını sağla */
+.tiptap-content-editor ::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: inherit;
+}
+
 .tiptap-content-editor p {
   margin: 0.8em 0;
   line-height: 1.6;
+  font-family: var(--paragraph-font-family, inherit);
 }
 
 .tiptap-content-editor h1,
@@ -45,13 +52,25 @@
   font-weight: 600;
   margin: 1.2em 0 0.6em 0;
   line-height: 1.4;
-  color: #1f2937;
+  color: var(--heading-color, #1f2937);
+  font-family: var(--heading-font-family, inherit);
 }
 
-.tiptap-content-editor h1 { font-size: 2em; }
-.tiptap-content-editor h2 { font-size: 1.6em; }
-.tiptap-content-editor h3 { font-size: 1.4em; }
-.tiptap-content-editor h4 { font-size: 1.2em; }
+.tiptap-content-editor h1 {
+  font-size: 2em;
+}
+
+.tiptap-content-editor h2 {
+  font-size: 1.6em;
+}
+
+.tiptap-content-editor h3 {
+  font-size: 1.4em;
+}
+
+.tiptap-content-editor h4 {
+  font-size: 1.2em;
+}
 
 .tiptap-content-editor ul {
   list-style: disc;
@@ -126,7 +145,6 @@
   background-color: #fef08a;
   padding: 0.1em 0.2em;
   border-radius: 2px;
-  color: inherit;
 }
 
 /* Farklı vurgu renkleri için destek */
@@ -135,13 +153,42 @@
   background-color: var(--highlight-color, #fef08a);
 }
 
-/* Inline renk desteği */
+/* Inline renk desteği - span'ın inline style'ı işlemi yapacak */
 .inline-color {
-  color: inherit;
+  /* CSS property eklemez, inline style'ı kullanın */
 }
 
+/* Data attribute ile renk belirlenen span'ları destekle - RENKLI METİN HER ZAMAN GÖRÜNÜR */
 span[data-color] {
-  color: var(--text-color);
+  color: inherit;
+  /* Inline style'ı CSS override'ı yapmak yok - style attribute önceliğe sahip */
+}
+
+/* Inline style ile renk uygulanmış span'lar - bu TiptapEditor'da her zaman görünür olmalı */
+span[style*="color"] {
+  color: var(--tw-text-opacity) !important;
+}
+
+/* Metin renginin display modunda da görüntülenmesini sağla */
+.text-overlay-display span[data-color],
+.text-overlay-tiptap span[data-color],
+.text-overlay-display .inline-color,
+.text-overlay-tiptap .inline-color {
+  /* Inline style'ı koruyoruz - CSS cascade'inde yüksek priority */
+}
+
+/* EditorContent'de renkli metinler her zaman görünür olmalı */
+.ProseMirror span[data-color],
+.tiptap span[data-color],
+.tiptap-editor-content span[data-color] {
+  /* Inline style tarafından kontrol edilir */
+}
+
+/* Seçimde bile renk korunmalı */
+.ProseMirror span[data-color]::selection,
+.tiptap span[data-color]::selection,
+.tiptap-editor-content span[data-color]::selection {
+  color: inherit;
 }
 
 /* Matematik Sembolleri Desteği */
@@ -216,13 +263,13 @@ math mfrac {
   margin: 0 2px;
 }
 
-math mfrac > * {
+math mfrac>* {
   display: block;
   text-align: center;
   padding: 2px 4px;
 }
 
-math mfrac > :first-child {
+math mfrac> :first-child {
   border-bottom: 1px solid currentColor;
 }
 
@@ -316,7 +363,7 @@ math mo[largeop] {
   font-size: 1em;
 }
 
-.MathJax > mjx-container {
+.MathJax>mjx-container {
   display: inline-block;
 }
 
@@ -430,7 +477,7 @@ mjx-mo[stretchy="true"] {
   .MathJax {
     font-size: 0.95em;
   }
-  
+
   .text-overlay-display .MathJax[display="true"],
   .tiptap-editor-content .MathJax[display="true"] {
     margin: 0.5em 0;
@@ -439,6 +486,7 @@ mjx-mo[stretchy="true"] {
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
+
   mjx-mi,
   mjx-mo,
   mjx-mn {
@@ -473,7 +521,7 @@ mjx-mo[stretchy="true"] {
   background-color: #f9fafb;
 }
 
-.tiptap-table-cell > * {
+.tiptap-table-cell>* {
   margin: 0;
 }
 
@@ -575,11 +623,11 @@ mjx-mo[stretchy="true"] {
   .tiptap-table {
     box-shadow: none;
   }
-  
+
   .column-resize-handle {
     display: none !important;
   }
-  
+
   .tableWrapper:hover::before {
     display: none !important;
   }
@@ -594,6 +642,12 @@ mjx-mo[stretchy="true"] {
   outline: none;
   min-height: 20px;
   padding: 4px;
+}
+
+/* Selection styling - seçilmiş metinde rengini göster */
+.text-overlay-tiptap .ProseMirror ::selection {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: inherit;
 }
 
 /* ProseMirror içinde strong, em, u stilleri */
@@ -675,10 +729,9 @@ mjx-mo[stretchy="true"] {
 .text-overlay-tiptap .tiptap-highlight,
 .text-overlay-display mark,
 .text-overlay-display .tiptap-highlight {
-  background-color: #fef08a !important;
+  background-color: #fef08a;
   padding: 0.1em 0.2em;
   border-radius: 2px;
-  color: inherit;
 }
 
 /* Kalın metin - HER İKİ MODDA */
@@ -706,7 +759,8 @@ mjx-mo[stretchy="true"] {
   margin: 0.5em 0;
   line-height: inherit;
   color: var(--default-text-color, #000000);
-  font-size: var(--paragraph-font-size, 14px); /* CSS variable'dan al */
+  font-size: var(--paragraph-font-size, 14px);
+  /* CSS variable'dan al */
 }
 
 /* Display modunda h1/h2/h3 font-size'ları güçlendir */
@@ -721,4 +775,3 @@ mjx-mo[stretchy="true"] {
 .text-overlay-display h3 {
   font-size: calc(var(--heading-font-size, 2em) * 0.7) !important;
 }
-

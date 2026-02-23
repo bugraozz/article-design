@@ -26,7 +26,6 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import FontSize from "../../extensions/FontSize";
 import InlineColor from "../../extensions/InlineColor";
-import { TextStyle } from "@tiptap/extension-text-style";
 import { MathInline, MathBlock } from "../../extensions/MathExtension";
 
 export default function TextPropertiesPanel({
@@ -56,7 +55,6 @@ export default function TextPropertiesPanel({
         Highlight.configure({ multicolor: true }),
         FontSize,
         InlineColor,
-        TextStyle,
         Table.configure({
           resizable: true,
           handleWidth: 4,
@@ -74,8 +72,10 @@ export default function TextPropertiesPanel({
         MathBlock,
       ],
       content: overlayHtml,
-      onUpdate: ({ editor }) => {
-        onChange(editor.getHTML());
+      onUpdate: ({ editor, transaction }) => {
+        const html = editor.getHTML();
+        console.log('📝 TextPropertiesPanel onUpdate - HTML changed');
+        onChange(html);
       },
       onSelectionUpdate: ({ editor }) => {
         if (onEditorReady) {
@@ -96,6 +96,10 @@ export default function TextPropertiesPanel({
     if (editor && overlayHtml && editor.getHTML() !== overlayHtml) {
       // Sadece focus yoksa güncelle ki yazarken atlama yapmasın
       if (!editor.isFocused) {
+        console.log('📥 TextPropertiesPanel setContent:', {
+          inputHTML: overlayHtml.substring(0, 200),
+          currentHTML: editor.getHTML().substring(0, 200),
+        });
         editor.commands.setContent(overlayHtml);
       }
     }
@@ -112,7 +116,18 @@ export default function TextPropertiesPanel({
       alert("Lütfen rengi değiştirmek istediğiniz metni seçin!");
       return;
     }
-    editor.chain().focus().setColor(color).run();
+    
+    console.log('🎨 handleTextColor:', color);
+    editor.chain()
+      .focus()
+      .setInlineColor(color)
+      .run();
+    
+    // Hemen sonra state check
+    console.log('📊 State after setInlineColor:');
+    editor.state.doc.nodesBetween(from, to, (node, pos) => {
+      console.log('  Node:', node.type.name, 'Marks:', node.marks);
+    });
   };
 
   const handleTextAlign = (align) => {

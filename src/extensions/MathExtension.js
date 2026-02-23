@@ -9,6 +9,8 @@ export const MathInline = Node.create({
   inline: true,
 
   atom: true,
+  draggable: true,
+  selectable: true,
 
   addAttributes() {
     return {
@@ -52,6 +54,7 @@ export const MathInline = Node.create({
         class: 'math-inline katex-rendered',
         'data-latex': latex,
         contenteditable: 'false',
+        style: 'cursor: grab; user-select: none; display: inline-block; background: transparent;',
       }),
       ['span', { innerHTML: renderedHTML }],
     ];
@@ -63,7 +66,11 @@ export const MathInline = Node.create({
       dom.className = 'math-inline katex-rendered';
       dom.setAttribute('data-latex', node.attrs.latex);
       dom.contentEditable = 'false';
-      
+      dom.style.cursor = 'grab';
+      dom.style.userSelect = 'none';
+      dom.style.display = 'inline-block';
+      dom.style.background = 'transparent';
+
       try {
         const rendered = katex.renderToString(node.attrs.latex, {
           throwOnError: false,
@@ -174,7 +181,7 @@ export const MathInline = Node.create({
       // Double click to edit - Inline Editor
       dom.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        
+
         // Eğer zaten açıksa kapat
         if (editPopup) {
           editPopup.remove();
@@ -314,7 +321,7 @@ export const MathInline = Node.create({
         dom,
         update: (updatedNode) => {
           if (updatedNode.type.name !== 'mathInline') return false;
-          
+
           dom.setAttribute('data-latex', updatedNode.attrs.latex);
           try {
             const rendered = katex.renderToString(updatedNode.attrs.latex, {
@@ -328,7 +335,7 @@ export const MathInline = Node.create({
           } catch (error) {
             dom.textContent = `$${updatedNode.attrs.latex}$`;
           }
-          
+
           return true;
         },
         destroy: () => {
@@ -350,6 +357,8 @@ export const MathBlock = Node.create({
   group: 'block',
 
   atom: true,
+  draggable: true,
+  selectable: true,
 
   addAttributes() {
     return {
@@ -393,6 +402,7 @@ export const MathBlock = Node.create({
         class: 'math-block katex-rendered',
         'data-latex': latex,
         contenteditable: 'false',
+        style: 'cursor: grab; user-select: none; margin: 1em 0; background: transparent;',
       }),
       ['div', { innerHTML: renderedHTML }],
     ];
@@ -404,7 +414,11 @@ export const MathBlock = Node.create({
       dom.className = 'math-block katex-rendered';
       dom.setAttribute('data-latex', node.attrs.latex);
       dom.contentEditable = 'false';
-      
+      dom.style.cursor = 'grab';
+      dom.style.userSelect = 'none';
+      dom.style.margin = '1em 0';
+      dom.style.background = 'transparent';
+
       try {
         const rendered = katex.renderToString(node.attrs.latex, {
           throwOnError: false,
@@ -509,7 +523,7 @@ export const MathBlock = Node.create({
       // Double click to edit - Inline Editor
       dom.addEventListener('dblclick', (e) => {
         e.stopPropagation();
-        
+
         if (editPopup) {
           editPopup.remove();
           editPopup = null;
@@ -642,7 +656,7 @@ export const MathBlock = Node.create({
         dom,
         update: (updatedNode) => {
           if (updatedNode.type.name !== 'mathBlock') return false;
-          
+
           dom.setAttribute('data-latex', updatedNode.attrs.latex);
           try {
             const rendered = katex.renderToString(updatedNode.attrs.latex, {
@@ -656,7 +670,7 @@ export const MathBlock = Node.create({
           } catch (error) {
             dom.textContent = `$$${updatedNode.attrs.latex}$$`;
           }
-          
+
           return true;
         },
         destroy: () => {

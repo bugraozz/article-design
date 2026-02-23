@@ -4,25 +4,25 @@ export const defaultArticleSettings = {
   titleColor: "#1f2937", // Başlık rengi
   titleFontSize: 24,
   titleFontFamily: "Calibri",
-  
+
   subtitleColor: "#4b5563",
   subtitleFontSize: 18,
-  
+
   bodyFontSize: 14,
   bodyFontFamily: "Calibri",
   bodyLineHeight: 1.6,
   bodyColor: "#374151",
-  
+
   // Paragraf ayarları
   paragraphIndent: 12, // px
   paragraphSpacing: 12, // px
-  
+
   // Sayfa ayarları
   pageMarginTop: 40,
   pageMarginBottom: 40,
   pageMarginLeft: 50,
   pageMarginRight: 50,
-  
+
   // İlk sayfa ayarları
   coverPageBackground: "#ffffff",
   coverPageLogoWidth: 100,
@@ -181,36 +181,46 @@ export const pageTemplates = {
 
   // Tek sütun metin
   singleColumn: {
-    name: "Tek Sütun",
-    description: "Klasik makale düzeni",
+    name: "Tek Sütun (Premium)",
+    description: "Zarif ve okunaklı klasik düzen",
     icon: "📝",
     category: "basic",
-    features: ["Başlık", "Tek Sütun", "Giriş Metni"],
+    features: ["Üst Kenarlık", "Geniş Kenar Boşluğu", "Gelişmiş Tipografi"],
     create: (id, settings) => ({
       id,
       title: `Sayfa ${id}`,
       type: "content",
       mode: "free",
       overlays: [
+        // Üst dekoratif çizgi
         {
           id: crypto.randomUUID(),
           type: "text",
-          html: "<h2>Başlık</h2>",
+          html: '<div style="width: 100%; height: 4px; background: #e5e7eb; border-radius: 2px;"></div>',
+          x: settings.pageMarginLeft,
+          y: settings.pageMarginTop - 20,
+          width: 794 - settings.pageMarginLeft - settings.pageMarginRight,
+          height: 10,
+        },
+        {
+          id: crypto.randomUUID(),
+          type: "text",
+          html: '<h2 style="margin: 0; font-weight: 800; letter-spacing: -0.5px;">Bölüm Başlığı</h2>',
           x: settings.pageMarginLeft,
           y: settings.pageMarginTop,
-          width: 694 - settings.pageMarginLeft - settings.pageMarginRight,
+          width: 794 - settings.pageMarginLeft - settings.pageMarginRight,
           height: 60,
-          fontSize: settings.titleFontSize,
+          fontSize: settings.titleFontSize + 4,
           color: settings.titleColor,
         },
         {
           id: crypto.randomUUID(),
           type: "text",
-          html: "<p>İçerik buraya yazılacak...</p>",
+          html: '<p style="margin: 0; text-align: justify; line-height: 1.8;">Buraya ana metin içeriği gelecek. Premium şablonlarda satır aralıkları ve kenar boşlukları okuma kolaylığı için optimize edilmiştir. Profesyonel bir döküman için metinlerinizi bu alanlara yerleştirebilirsiniz.</p>',
           x: settings.pageMarginLeft,
           y: settings.pageMarginTop + 80,
-          width: 694 - settings.pageMarginLeft - settings.pageMarginRight,
-          height: 200,
+          width: 794 - settings.pageMarginLeft - settings.pageMarginRight,
+          height: 400,
           fontSize: settings.bodyFontSize,
           color: settings.bodyColor,
           lineHeight: settings.bodyLineHeight,
@@ -230,15 +240,15 @@ export const pageTemplates = {
 
   // İki sütun
   twoColumn: {
-    name: "İki Sütun",
-    description: "Gazete/dergi formatı",
+    name: "İki Sütun (Magazin)",
+    description: "Modern dergi ve bülten formatı",
     icon: "📰",
     category: "layout",
-    features: ["Başlık", "Çift Sütun", "Profesyonel"],
+    features: ["Dikey Ayırıcı", "Dengeli Sütunlar", "Vurgulu Başlık"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const columnWidth = (contentWidth - 20) / 2;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const columnWidth = (contentWidth - 40) / 2;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -248,7 +258,7 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2>Başlık</h2>",
+            html: '<h2 style="margin: 0; border-bottom: 2px solid #be123c; padding-bottom: 5px; display: inline-block;">ANALİZ VE RAPOR</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
@@ -259,20 +269,28 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p>Sol sütun içeriği...</p>",
+            html: '<p style="margin: 0; text-align: justify; font-weight: 500; font-style: italic; color: #6b7280;">Bu sütunda projenin giriş ve metodoloji kısımları yer alır. Okuyucuyu metne hazırlayan önemli vurgular burada sunulur.</p>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 80,
             width: columnWidth,
-            height: 300,
+            height: 150,
             fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+          },
+          // Sütun Ayırıcı Çizgi
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="width: 1px; height: 100%; background: #f3f4f6;"></div>',
+            x: settings.pageMarginLeft + columnWidth + 19,
+            y: settings.pageMarginTop + 80,
+            width: 10,
+            height: 800,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p>Sağ sütun içeriği...</p>",
-            x: settings.pageMarginLeft + columnWidth + 20,
+            html: '<p style="margin: 0; text-align: justify;">Sağ sütun ise daha detaylı veriler, sonuçlar ve çıkarımların sunulduğu alandır. İki sütunlu yapı, yoğun bilgilerin daha kolay taranmasını sağlar.</p>',
+            x: settings.pageMarginLeft + columnWidth + 40,
             y: settings.pageMarginTop + 80,
             width: columnWidth,
             height: 300,
@@ -296,15 +314,15 @@ export const pageTemplates = {
 
   // Görsel + metin
   imageText: {
-    name: "Görsel + Metin",
-    description: "Görsel destekli içerik",
+    name: "Görsel + Metin (Executive)",
+    description: "Yönetici özetleri ve sunumlar için",
     icon: "🖼️",
     category: "layout",
-    features: ["Görsel Alan", "Metin", "Açıklama"],
+    features: ["Modern Kart Tasarımı", "Okunaklı Metin", "Görsel Vurgu"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const imageWidth = (contentWidth - 20) / 2;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const imageWidth = (contentWidth - 40) / 2;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -314,19 +332,18 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2>Başlık</h2>",
+            html: '<h2 style="margin: 0; font-weight: 800; color: #be123c; border-left: 5px solid #be123c; padding-left: 15px;">STRATEJIK GÖRÜNÜM</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
             fontSize: settings.titleFontSize,
-            color: settings.titleColor,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p>Görsel açıklaması ve metin içeriği buraya...</p>",
-            x: settings.pageMarginLeft + imageWidth + 20,
+            html: '<div style="background: #fdf2f2; padding: 20px; border-radius: 8px; border: 1px solid #fee2e2;"><p style="margin: 0; line-height: 1.7;">Görselin yanındaki bu alan, önemli noktaları vurgulamak veya anahtar mesajları iletmek için tasarlanmıştır. Profesyonel dökümanlarda metin ve görsel dengesi kritik öneme sahiptir.</p></div>',
+            x: settings.pageMarginLeft + imageWidth + 40,
             y: settings.pageMarginTop + 80,
             width: imageWidth,
             height: 300,
@@ -342,7 +359,8 @@ export const pageTemplates = {
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 80,
             width: imageWidth,
-            height: 300,
+            height: 350,
+            borderRadius: 8,
           },
         ],
         tables: [],
@@ -359,14 +377,14 @@ export const pageTemplates = {
 
   // Tablo + metin
   tableText: {
-    name: "Tablo + Metin",
-    description: "Veri sunumu için ideal",
+    name: "Tablo + Metin (Analitik)",
+    description: "Veri sunumu ve analiz için",
     icon: "📊",
     category: "academic",
-    features: ["Tablo", "Açıklama", "Analiz"],
+    features: ["Stylized Table", "Analiz Notları", "Profesyonel"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -376,7 +394,7 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2>Başlık</h2>",
+            html: '<h2 style="margin: 0; font-weight: 700;">VERİ ANALİZ ŞABLONU</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
@@ -387,9 +405,9 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p>Tablo açıklaması ve sonuç yorumu...</p>",
+            html: '<div style="border-top: 1px solid #e5e7eb; padding-top: 15px;"><p style="margin: 0; color: #6b7280; font-size: 13px;"><strong>NOT:</strong> Yukarıdaki tablo verileri, belirtilen dönemdeki performans göstergelerini temsil etmektedir.</p></div>',
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 300,
+            y: settings.pageMarginTop + 350,
             width: contentWidth,
             height: 150,
             fontSize: settings.bodyFontSize,
@@ -404,17 +422,32 @@ export const pageTemplates = {
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 80,
             width: contentWidth,
-            height: 200,
+            height: 250,
+            rows: 4,
+            cols: 3,
             data: [
-              ["Başlık 1", "Başlık 2", "Başlık 3"],
-              ["Veri 1", "Veri 2", "Veri 3"],
-              ["Veri 4", "Veri 5", "Veri 6"],
+              ["KRİTİK GÖSTERGE", "BİRİM", "DEĞER"],
+              ["Hız", "ms", "250"],
+              ["Verimlilik", "%", "98.4"],
+              ["Güvenlik", "lvl", "A+"],
             ],
-            style: {
-              borderColor: "#000000",
-              headerBg: "#f3f4f6",
-              cellPadding: 8,
+            headerRow: true,
+            tableStyle: {
+              borderWidth: 1,
+              borderColor: "#e5e7eb",
+              borderRadius: 8,
             },
+            cellStyles: {
+              global: {
+                padding: "12px",
+                fontSize: "13px",
+              },
+              header: {
+                backgroundColor: "#f9fafb",
+                fontWeight: "bold",
+                color: "#374151",
+              }
+            }
           },
         ],
         documentContent: "",
@@ -469,7 +502,7 @@ export const pageTemplates = {
       const sideColX = margin;
       const mainColX = sideColX + sideColWidth + gap;
       const mainColWidth = contentWidth - sideColWidth - gap;
-      
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -487,7 +520,7 @@ export const pageTemplates = {
             height: 60,
             borderRadius: 50,
           },
-          
+
           // 2. Dergi bilgisi (sağ üst)
           {
             id: crypto.randomUUID(),
@@ -502,7 +535,7 @@ export const pageTemplates = {
             fontSize: 7.5,
             color: "#0066cc",
           },
-          
+
           // 3. Dergi başlığı (ortada)
           {
             id: crypto.randomUUID(),
@@ -518,7 +551,7 @@ export const pageTemplates = {
             fontWeight: "bold",
             color: "#1a1a1a",
           },
-          
+
           // 4. Alt bilgi satırı
           {
             id: crypto.randomUUID(),
@@ -533,7 +566,7 @@ export const pageTemplates = {
             fontSize: 7,
             color: "#666",
           },
-          
+
           // 5. Makale başlığı (mavi)
           {
             id: crypto.randomUUID(),
@@ -549,7 +582,7 @@ export const pageTemplates = {
             fontWeight: "bold",
             color: "#0066cc",
           },
-          
+
           // 6. Yazar adı
           {
             id: "authors", // ID ekledik
@@ -564,7 +597,7 @@ export const pageTemplates = {
             fontSize: 10,
             color: "#1a1a1a",
           },
-          
+
           // 7. Kurum bilgisi
           {
             id: "institution", // ID ekledik
@@ -579,7 +612,7 @@ export const pageTemplates = {
             fontSize: 8,
             color: "#555",
           },
-          
+
           // 8. Sol sidebar: Research Article
           {
             id: crypto.randomUUID(),
@@ -595,7 +628,7 @@ export const pageTemplates = {
             fontWeight: "bold",
             color: "#1a1a1a",
           },
-          
+
           // 9. Ana kolon: ABSTRACT başlığı
           {
             id: crypto.randomUUID(),
@@ -626,7 +659,7 @@ export const pageTemplates = {
             fontSize: 7.5,
             color: "#666",
           },
-          
+
           // 11. Ana kolon: Abstract metni
           {
             id: crypto.randomUUID(),
@@ -641,7 +674,7 @@ export const pageTemplates = {
             fontSize: 8,
             color: "#333",
           },
-          
+
           // 12. Ana kolon: Keywords
           {
             id: crypto.randomUUID(),
@@ -672,7 +705,7 @@ export const pageTemplates = {
             fontWeight: "bold",
             color: "#0066cc",
           },
-          
+
           // 14. Ana kolon: Öz başlığı
           {
             id: crypto.randomUUID(),
@@ -688,7 +721,7 @@ export const pageTemplates = {
             fontWeight: "bold",
             color: "#1a1a1a",
           },
-          
+
           // 15. Ana kolon: Türkçe özet metni
           {
             id: crypto.randomUUID(),
@@ -748,7 +781,7 @@ export const pageTemplates = {
             fontSize: 6.5,
             color: "#666",
           },
-          
+
           // 20. Sayfa numarası
           {
             id: crypto.randomUUID(),
@@ -782,72 +815,91 @@ export const pageTemplates = {
 
   // Poster şablonu
   poster: {
-    name: "Poster/Afiş",
-    description: "Görsel sunum formatı",
+    name: "Poster/Afiş (Modern)",
+    description: "Yüksek etkili görsel sunum",
     icon: "🎨",
     category: "creative",
-    features: ["Büyük Başlık", "Görsel Odaklı", "Özet"],
+    features: ["Dinamik Başlık", "Gradyan Aksan", "Modern Düzen"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      
+      const contentWidth = 794;
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // Gradyan Arka Plan Bloğu
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h1 style='text-align: center;'>POSTER BAŞLIĞI</h1>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 20,
+            html: '<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);"></div>',
+            x: 0,
+            y: 0,
             width: contentWidth,
-            height: 100,
-            fontSize: 32,
-            color: settings.titleColor,
+            height: 350,
+            locked: true,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: center;'><em>Alt Başlık - Kısa Açıklama</em></p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 135,
-            width: contentWidth,
-            height: 50,
+            html: '<h1 style="text-align: left; margin: 0; color: white; line-height: 1.1; letter-spacing: -2px; font-weight: 800;">GELECEĞİN<br/>TASARIMI</h1>',
+            x: 60,
+            y: 80,
+            width: 600,
+            height: 150,
+            fontSize: 56,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<p style="margin: 0; color: #a5b4fc; letter-spacing: 4px; text-transform: uppercase; font-weight: 500;">INOVASYON ZIRVESİ // 2026</p>',
+            x: 60,
+            y: 230,
+            width: 500,
+            height: 40,
+            fontSize: 16,
+          },
+          // İçerik Alanı
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="border-left: 4px solid #be123c; padding-left: 20px;"><h3 style="margin: 0 0 10px 0; font-weight: 700;">VİZYONUMUZ</h3><p style="margin: 0; line-height: 1.6; color: #4b5563;">Bu poster şablonu, dikkat çekici başlıklar ve modern tipografi ile dökümanlarınıza enerji katmak için tasarlanmıştır. Görsel ve metin dengesi optimize edilmiştir.</p></div>',
+            x: 60,
+            y: 750,
+            width: 350,
+            height: 250,
             fontSize: 14,
-            color: "#666666",
           },
+          // Yan Bilgi Çubuğu
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3>Ana İçerik</h3><p>Önemli bilgiler burada...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 500,
-            width: contentWidth,
-            height: 200,
-            fontSize: settings.bodyFontSize + 2,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            html: '<div style="text-align: right;"><h4 style="margin: 0; color: #be123c;">ETKİNLİK DETAYI</h4><p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">Büyük Salon, Saat 14:00<br/>Ücretsiz Katılım</p></div>',
+            x: 450,
+            y: 750,
+            width: 280,
+            height: 100,
           },
         ],
         images: [
           {
             id: crypto.randomUUID(),
             src: null,
-            x: settings.pageMarginLeft + (contentWidth - 400) / 2,
-            y: settings.pageMarginTop + 200,
-            width: 400,
-            height: 280,
+            x: 60,
+            y: 300,
+            width: 674,
+            height: 400,
+            borderRadius: 12,
           },
         ],
         tables: [],
         documentContent: "",
         pageSettings: {
-          marginTop: settings.pageMarginTop,
-          marginBottom: settings.pageMarginBottom,
-          marginLeft: settings.pageMarginLeft,
-          marginRight: settings.pageMarginRight,
+          marginTop: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          marginRight: 0,
         },
       };
     },
@@ -855,67 +907,80 @@ export const pageTemplates = {
 
   // Üç sütun şablonu
   threeColumn: {
-    name: "Üç Sütun",
-    description: "Broşür/bülten formatı",
+    name: "Üç Sütun (Profesyonel)",
+    description: "Broşür ve bültenler için kompakt düzen",
     icon: "📑",
     category: "layout",
-    features: ["3 Sütun", "Başlık", "Kompakt"],
+    features: ["İnce Ayırıcılar", "Modern Başlık Paneli", " optimize edilmiş Alan"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const columnWidth = (contentWidth - 40) / 3;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const columnWidth = (contentWidth - 60) / 3;
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // Üst Başlık Paneli
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Başlık</h2>",
+            html: '<div style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 15px; border-radius: 8px 8px 0 0;"><h2 style="margin: 0; text-align: center; color: #1e293b; letter-spacing: 1px;">HAFTALIK ÖZET VE ANALİZ</h2></div>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
-            height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
+            height: 70,
           },
+          // Sütun 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>Sol Sütun</h4><p>İçerik...</p>",
+            html: '<h4 style="color: #be123c; border-bottom: 1px solid #fee2e2; padding-bottom: 5px;">GÜNDEM</h4><p style="margin: 10px 0; text-align: justify; font-size: 12px;">Haftalık gelişmelere dair ilk sütun verileri. Önemli başlıklar ve kısa özetler burada yer alır.</p>',
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80,
+            y: settings.pageMarginTop + 100,
             width: columnWidth,
             height: 400,
-            fontSize: settings.bodyFontSize - 1,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
           },
+          // Ayırıcı 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>Orta Sütun</h4><p>İçerik...</p>",
-            x: settings.pageMarginLeft + columnWidth + 20,
-            y: settings.pageMarginTop + 80,
-            width: columnWidth,
-            height: 400,
-            fontSize: settings.bodyFontSize - 1,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            html: '<div style="width: 1px; height: 100%; background: #f1f5f9;"></div>',
+            x: settings.pageMarginLeft + columnWidth + 29,
+            y: settings.pageMarginTop + 100,
+            width: 2,
+            height: 800,
           },
+          // Sütun 2
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>Sağ Sütun</h4><p>İçerik...</p>",
-            x: settings.pageMarginLeft + (columnWidth + 20) * 2,
-            y: settings.pageMarginTop + 80,
+            html: '<h4 style="color: #be123c; border-bottom: 1px solid #fee2e2; padding-bottom: 5px;">DETAYLAR</h4><p style="margin: 10px 0; text-align: justify; font-size: 12px;">Orta sütunda daha derinlemesine analizler ve teknik detaylar sunulur. Broşür düzeninde en çok dikkat çeken kısımdır.</p>',
+            x: settings.pageMarginLeft + columnWidth + 30,
+            y: settings.pageMarginTop + 100,
             width: columnWidth,
             height: 400,
-            fontSize: settings.bodyFontSize - 1,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+          },
+          // Ayırıcı 2
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="width: 1px; height: 100%; background: #f1f5f9;"></div>',
+            x: settings.pageMarginLeft + (columnWidth * 2) + 59,
+            y: settings.pageMarginTop + 100,
+            width: 2,
+            height: 800,
+          },
+          // Sütun 3
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<h4 style="color: #be123c; border-bottom: 1px solid #fee2e2; padding-bottom: 5px;">SONUÇ</h4><p style="margin: 10px 0; text-align: justify; font-size: 12px;">Sağ sütun ise çıkarımlar, aksiyon planları ve iletişim bilgilerini kapsayan final bölümüdür.</p>',
+            x: settings.pageMarginLeft + (columnWidth + 30) * 2,
+            y: settings.pageMarginTop + 100,
+            width: columnWidth,
+            height: 400,
           },
         ],
         images: [],
@@ -933,54 +998,50 @@ export const pageTemplates = {
 
   // Rapor şablonu
   report: {
-    name: "Rapor Sayfası",
-    description: "İş raporları için",
+    name: "Rapor Sayfası (Business)",
+    description: "Profesyonel iş raporları ve analizler",
     icon: "📈",
     category: "academic",
-    features: ["Başlık", "Grafik Alanı", "Sonuç"],
+    features: ["Vurgulu Başlık", "Özet Paneli", "Modern Görsel Alanı"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // Başlık Arka Planı
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2>Rapor Başlığı</h2>",
+            html: '<div style="background: #1e293b; color: white; padding: 25px; border-radius: 8px;"><h2 style="margin: 0; text-transform: uppercase; letter-spacing: 2px;">YILLIK PERFORMANS RAPORU</h2><p style="margin: 5px 0 0 0; opacity: 0.7; font-size: 12px;">STRATEJİ VE ANALİZ BİRİMİ</p></div>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
-            height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p>Rapor özeti ve genel bilgiler...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 75,
-            width: contentWidth,
             height: 100,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
           },
+          // Özet Kutusu (Key Insights)
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3>Sonuçlar ve Öneriler</h3><p>Analiz sonuçları...</p>",
+            html: '<div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px;"><h4 style="margin: 0 0 5px 0; color: #0369a1;">KRİTİK BULGULAR</h4><p style="margin: 0; font-size: 13px; line-height: 1.5;">Bu dönemde hedeflenen büyüme oranları %15 seviyesinde gerçekleşmiş olup, verimlilik artışı operasyonel maliyetleri %8 oranında düşürmüştür.</p></div>',
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 450,
+            y: settings.pageMarginTop + 120,
+            width: contentWidth,
+            height: 120,
+          },
+          // Detaylı Analiz Metni
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<h3 style="border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">DETAYLI ANALİZ</h3><p style="margin-top: 15px; text-align: justify; line-height: 1.7;">Verilerin derinlemesine incelenmesi sonucunda, pazar payındaki artışın doğrudan dijital dönüşüm yatırımlarıyla ilişkili olduğu gözlemlenmiştir. Aşağıdaki grafik bu ilişkiyi doğrulamaktadır.</p>',
+            x: settings.pageMarginLeft,
+            y: settings.pageMarginTop + 260,
             width: contentWidth,
             height: 200,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            fontSize: 14,
           },
         ],
         images: [
@@ -988,9 +1049,10 @@ export const pageTemplates = {
             id: crypto.randomUUID(),
             src: null,
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 190,
+            y: settings.pageMarginTop + 450,
             width: contentWidth,
-            height: 240,
+            height: 350,
+            borderRadius: 8,
           },
         ],
         tables: [],
@@ -1007,65 +1069,81 @@ export const pageTemplates = {
 
   // Karşılaştırma şablonu
   comparison: {
-    name: "Karşılaştırma",
-    description: "İki öge yan yana",
+    name: "Karşılaştırma (Dual)",
+    description: "İki seçeneği profesyonelce kıyaslayın",
     icon: "⚖️",
     category: "layout",
-    features: ["Yan Yana", "Karşılaştır", "İkili Düzen"],
+    features: ["Renk Kodlu Bölgeler", "VS Göstergesi", "Simetrik Düzen"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const halfWidth = (contentWidth - 20) / 2;
-      
+      const contentWidth = 794;
+      const halfWidth = contentWidth / 2;
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // Sol Bölge Arka Planı (Hafif Mavi)
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Karşılaştırma</h2>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop,
-            width: contentWidth,
-            height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
+            html: '<div style="width: 100%; height: 100%; background: #f0fdf4; border-right: 2px dashed #bbf7d0;"></div>',
+            x: 0,
+            y: 0,
+            width: halfWidth,
+            height: 1123,
+            locked: true,
+          },
+          // Sağ Bölge Arka Planı (Hafif Rose)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="width: 100%; height: 100%; background: #fff1f2;"></div>',
+            x: halfWidth,
+            y: 0,
+            width: halfWidth,
+            height: 1123,
+            locked: true,
+          },
+          // VS Göstergesi (Merkezde)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: white; border: 2px solid #e2e8f0; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #64748b; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">VS</div>',
+            x: halfWidth - 25,
+            y: 300,
+            width: 50,
+            height: 50,
+            locked: true,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3 style='text-align: center;'>Seçenek A</h3><p>Özellikler ve açıklamalar...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80,
-            width: halfWidth,
-            height: 450,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            html: '<h2 style="text-align: center; margin: 0; color: #166534;">OPSİYON A</h2><p style="text-align: justify; margin-top: 20px; line-height: 1.6;">Bu bölüm, ilk seçeneğin avantajlarını, teknik özelliklerini ve maliyet analizini sunmak için ayrılmıştır.</p>',
+            x: 50,
+            y: 150,
+            width: halfWidth - 100,
+            height: 400,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3 style='text-align: center;'>Seçenek B</h3><p>Özellikler ve açıklamalar...</p>",
-            x: settings.pageMarginLeft + halfWidth + 20,
-            y: settings.pageMarginTop + 80,
-            width: halfWidth,
-            height: 450,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            html: '<h2 style="text-align: center; margin: 0; color: #9f1239;">OPSİYON B</h2><p style="text-align: justify; margin-top: 20px; line-height: 1.6;">Bu bölüm ise alternatif çözümün kriterlerini ve fark yaratan noktalarını vurgular. Yan yana dizilim karar verme sürecini kolaylaştırır.</p>',
+            x: halfWidth + 50,
+            y: 150,
+            width: halfWidth - 100,
+            height: 400,
           },
         ],
         images: [],
         tables: [],
         documentContent: "",
         pageSettings: {
-          marginTop: settings.pageMarginTop,
-          marginBottom: settings.pageMarginBottom,
-          marginLeft: settings.pageMarginLeft,
-          marginRight: settings.pageMarginRight,
+          marginTop: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          marginRight: 0,
         },
       };
     },
@@ -1074,61 +1152,86 @@ export const pageTemplates = {
   // Kapak sayfası şablonu
   coverPage: {
     name: "Kapak Sayfası",
-    description: "Doküman girişi için",
+    description: "Modern ve iddialı bir doküman girişi",
     icon: "📖",
     category: "creative",
-    features: ["Büyük Başlık", "Alt Bilgi", "Merkezi"],
+    features: ["Asimetrik Tasarım", "Geometrik Aksan", "Modern Hiyerarşi"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      
+      const contentWidth = 794; // Tam sayfa genişliği
+      const innerWidth = contentWidth - 100; // Kenar boşlukları çıkarılmış
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // 1. Dekoratif Sol Bar (Accent)
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h1 style='text-align: center;'>DÖKÜMAN BAŞLIĞI</h1>",
-            x: settings.pageMarginLeft,
-            y: 280,
-            width: contentWidth,
-            height: 120,
-            fontSize: 36,
+            html: '<div style="width: 100%; height: 100%; background: linear-gradient(180deg, #f43f5e 0%, #be123c 100%);"></div>',
+            x: 0,
+            y: 0,
+            width: 40,
+            height: 1123,
+            locked: true,
+          },
+          // 2. Büyük Başlık (Sol hizalı, kalın)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: `<h1 style="text-align: left; margin: 0; line-height: 1.1; letter-spacing: -1px; text-transform: uppercase;">PROFESYONEL<br/><span style="color: #be123c;">DÖKÜMAN</span><br/>RAPORU</h1>`,
+            x: 80,
+            y: 220,
+            width: 600,
+            height: 250,
+            fontSize: 48,
+            fontWeight: "900",
             color: settings.titleColor,
           },
+          // 3. Alt Başlık / Yıl (İnce çizgi ile ayrılmış)
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: center;'><em>Alt başlık veya açıklama</em></p>",
-            x: settings.pageMarginLeft,
-            y: 420,
-            width: contentWidth,
+            html: `<div style="border-top: 2px solid #e5e7eb; padding-top: 20px;"><p style="margin: 0; font-size: 18px; color: #666666; letter-spacing: 2px; text-transform: uppercase;">STRATEJIK ANALIZ VE PLANLAMA // 2026</p></div>`,
+            x: 80,
+            y: 480,
+            width: 500,
             height: 60,
-            fontSize: 16,
-            color: "#666666",
           },
+          // 4. Açıklama metni (Küçük kolon)
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: center;'>Yazar Adı<br/>Tarih<br/>Versiyon</p>",
-            x: settings.pageMarginLeft,
-            y: 700,
-            width: contentWidth,
-            height: 100,
+            html: `<p style="margin: 0; line-height: 1.6; color: #4b5563;">Bu rapor, projenin tüm teknik detaylarını, gelecek vizyonunu ve akademik temellerini kapsayan profesyonel bir sunumdur. Modern tasarım ilkeleriyle hazırlanmıştır.</p>`,
+            x: 80,
+            y: 560,
+            width: 300,
+            height: 150,
             fontSize: 13,
-            color: "#888888",
+          },
+          // 5. Yazar Bilgisi (Sağ alt köşe)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: `<p style="text-align: right; margin: 0; line-height: 1.4;"><strong>HAZIRLAYAN</strong><br/>Sayın Yazar Adı Soyadı<br/><span style="color: #666666; font-size: 11px;">Kıdemli Proje Yöneticisi</span></p>`,
+            x: 450,
+            y: 950,
+            width: 250,
+            height: 80,
+            fontSize: 14,
+            color: "#333333",
           },
         ],
         images: [],
         tables: [],
         documentContent: "",
         pageSettings: {
-          marginTop: settings.pageMarginTop,
-          marginBottom: settings.pageMarginBottom,
-          marginLeft: settings.pageMarginLeft,
-          marginRight: settings.pageMarginRight,
+          marginTop: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          marginRight: 0,
         },
       };
     },
@@ -1136,15 +1239,15 @@ export const pageTemplates = {
 
   // Galeri şablonu
   gallery: {
-    name: "Galeri",
-    description: "Çoklu görsel sunum",
+    name: "Galeri (Modern)",
+    description: "Daire görseller ve modern ızgara düzeni",
     icon: "🖼️",
     category: "creative",
-    features: ["4 Görsel", "Alt Yazı", "Izgara"],
+    features: ["Daire Görseller", "Yüzen Alt Yazılar", "Simetrik Izgara"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const imageSize = (contentWidth - 20) / 2;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const imageSize = (contentWidth - 60) / 2;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1154,57 +1257,30 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Galeri</h2>",
+            html: '<h2 style="text-align: center; margin: 0; font-weight: 800; letter-spacing: 2px; color: #1e293b;">PORTFOLYO VİTRİNİ</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
+          },
+          // Kaptanlar (Görsellerin üzerine gelecek şekilde ayarlandı)
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: rgba(30, 41, 59, 0.8); color: white; padding: 5px 10px; border-radius: 20px; font-size: 11px; text-align: center;">PROJE 01</div>',
+            x: settings.pageMarginLeft + (imageSize / 2) - 40,
+            y: settings.pageMarginTop + 80 + imageSize - 30,
+            width: 80,
+            height: 30,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: center;'><em>Açıklama 1</em></p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + imageSize + 10,
-            width: imageSize,
-            height: 40,
-            fontSize: 11,
-            color: "#666666",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p style='text-align: center;'><em>Açıklama 2</em></p>",
-            x: settings.pageMarginLeft + imageSize + 20,
-            y: settings.pageMarginTop + 80 + imageSize + 10,
-            width: imageSize,
-            height: 40,
-            fontSize: 11,
-            color: "#666666",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p style='text-align: center;'><em>Açıklama 3</em></p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + imageSize * 2 + 50,
-            width: imageSize,
-            height: 40,
-            fontSize: 11,
-            color: "#666666",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p style='text-align: center;'><em>Açıklama 4</em></p>",
-            x: settings.pageMarginLeft + imageSize + 20,
-            y: settings.pageMarginTop + 80 + imageSize * 2 + 50,
-            width: imageSize,
-            height: 40,
-            fontSize: 11,
-            color: "#666666",
+            html: '<div style="background: rgba(30, 41, 59, 0.8); color: white; padding: 5px 10px; border-radius: 20px; font-size: 11px; text-align: center;">PROJE 02</div>',
+            x: settings.pageMarginLeft + imageSize + 30 + (imageSize / 2) - 40,
+            y: settings.pageMarginTop + 80 + imageSize - 30,
+            width: 80,
+            height: 30,
           },
         ],
         images: [
@@ -1215,30 +1291,16 @@ export const pageTemplates = {
             y: settings.pageMarginTop + 80,
             width: imageSize,
             height: imageSize,
+            borderRadius: 50, // Daire
           },
           {
             id: crypto.randomUUID(),
             src: null,
-            x: settings.pageMarginLeft + imageSize + 20,
+            x: settings.pageMarginLeft + imageSize + 30,
             y: settings.pageMarginTop + 80,
             width: imageSize,
             height: imageSize,
-          },
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + imageSize + 50,
-            width: imageSize,
-            height: imageSize,
-          },
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft + imageSize + 20,
-            y: settings.pageMarginTop + 80 + imageSize + 50,
-            width: imageSize,
-            height: imageSize,
+            borderRadius: 50, // Daire
           },
         ],
         tables: [],
@@ -1255,14 +1317,14 @@ export const pageTemplates = {
 
   // SSS/FAQ şablonu
   faq: {
-    name: "SSS/FAQ",
-    description: "Soru-cevap formatı",
+    name: "SSS/FAQ (Modern)",
+    description: "Profesyonel soru-cevap paneli",
     icon: "❓",
     category: "basic",
-    features: ["Sorular", "Cevaplar", "Düzenli"],
+    features: ["İkonografik Başlıklar", "Vurgulu Bloklar", "Optimize Dizilim"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1272,61 +1334,31 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Sıkça Sorulan Sorular</h2>",
+            html: '<h2 style="text-align: center; margin-bottom: 30px; font-weight: 800; color: #1e293b;">SIKÇA SORULAN SORULAR</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
           },
+          // FAQ Item 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>S: İlk soru buraya?</h4><p>C: Cevap açıklaması...</p>",
+            html: '<div style="background: #f8fafc; border-radius: 8px; padding: 20px; border: 1px solid #e2e8f0;"><h4 style="margin: 0 0 10px 0; color: #be123c;">S: Platformun temel avantajları nelerdir?</h4><p style="margin: 0; font-size: 13px; line-height: 1.6; color: #475569;">C: Hızlı içerik oluşturma, modern şablonlar ve esnek düzen yapısı sayesinde profesyonel sonuçlar elde edersiniz.</p></div>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 80,
             width: contentWidth,
-            height: 100,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            height: 120,
           },
+          // FAQ Item 2
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>S: İkinci soru buraya?</h4><p>C: Cevap açıklaması...</p>",
+            html: '<div style="background: #f8fafc; border-radius: 8px; padding: 20px; border: 1px solid #e2e8f0;"><h4 style="margin: 0 0 10px 0; color: #be123c;">S: Akademik formatlara uyumlu mu?</h4><p style="margin: 0; font-size: 13px; line-height: 1.6; color: #475569;">C: Evet, yerleşik akademik şablonumuz özellikle bilimsel makale ve dental journal standartlarına göre optimize edilmiştir.</p></div>',
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 200,
+            y: settings.pageMarginTop + 220,
             width: contentWidth,
-            height: 100,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h4>S: Üçüncü soru buraya?</h4><p>C: Cevap açıklaması...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 320,
-            width: contentWidth,
-            height: 100,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h4>S: Dördüncü soru buraya?</h4><p>C: Cevap açıklaması...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 440,
-            width: contentWidth,
-            height: 100,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            height: 120,
           },
         ],
         images: [],
@@ -1344,105 +1376,78 @@ export const pageTemplates = {
 
   // Zaman çizelgesi şablonu
   timeline: {
-    name: "Zaman Çizelgesi",
-    description: "Kronolojik akış",
+    name: "Zaman Çizelgesi (Modern)",
+    description: "Kronolojik akış ve yol haritası",
     icon: "📅",
     category: "creative",
-    features: ["Tarih", "Olay", "Sıralı"],
+    features: ["Dikey Akış Hattı", "Renkli Düğümler", "Modern Tipografi"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const leftColumnWidth = 120;
-      const rightColumnX = settings.pageMarginLeft + leftColumnWidth + 20;
-      const rightColumnWidth = contentWidth - leftColumnWidth - 20;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const trackX = settings.pageMarginLeft + 60;
+
       return {
         id,
         title: `Sayfa ${id}`,
         type: "content",
         mode: "free",
         overlays: [
+          // Dikey Akış Çizgisi
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Zaman Çizelgesi</h2>",
+            html: '<div style="width: 4px; height: 100%; background: #e2e8f0; border-radius: 2px;"></div>',
+            x: trackX,
+            y: settings.pageMarginTop + 80,
+            width: 4,
+            height: 800,
+            locked: true,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<h2 style="margin: 0; font-weight: 800; color: #1e293b; border-bottom: 2px solid #be123c; display: inline-block;">PROJE YOL HARİTASI</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
           },
-          // 1. Tarih
+          // Node 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: right; font-weight: bold; color: #6366f1;'>2024</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80,
-            width: leftColumnWidth,
-            height: 40,
-            fontSize: 16,
-            color: "#6366f1",
+            html: '<div style="width: 20px; height: 20px; background: #be123c; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 0 2px #be123c;"></div>',
+            x: trackX - 8,
+            y: settings.pageMarginTop + 100,
+            width: 20,
+            height: 20,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>Önemli Olay 1</h4><p>Açıklama ve detaylar...</p>",
-            x: rightColumnX,
-            y: settings.pageMarginTop + 80,
-            width: rightColumnWidth,
+            html: '<div style="padding-left: 20px;"><h4 style="margin: 0; color: #be123c;">2024 - PLANLAMA</h4><p style="margin: 5px 0 0 0; font-size: 13px; line-height: 1.5;">Stratejik hedeflerin belirlenmesi ve ekip kurulumu süreci tamamlandı.</p></div>',
+            x: trackX + 20,
+            y: settings.pageMarginTop + 95,
+            width: contentWidth - 100,
             height: 80,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
           },
-          // 2. Tarih
+          // Node 2
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<p style='text-align: right; font-weight: bold; color: #6366f1;'>2023</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 180,
-            width: leftColumnWidth,
-            height: 40,
-            fontSize: 16,
-            color: "#6366f1",
+            html: '<div style="width: 20px; height: 20px; background: #334155; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 0 2px #334155;"></div>',
+            x: trackX - 8,
+            y: settings.pageMarginTop + 220,
+            width: 20,
+            height: 20,
           },
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h4>Önemli Olay 2</h4><p>Açıklama ve detaylar...</p>",
-            x: rightColumnX,
-            y: settings.pageMarginTop + 180,
-            width: rightColumnWidth,
+            html: '<div style="padding-left: 20px;"><h4 style="margin: 0; color: #334155;">2025 - GELİŞTİRME</h4><p style="margin: 5px 0 0 0; font-size: 13px; line-height: 1.5;">Altyapı modernizasyonu ve ana modüllerin entegrasyonu devam ediyor.</p></div>',
+            x: trackX + 20,
+            y: settings.pageMarginTop + 215,
+            width: contentWidth - 100,
             height: 80,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-          // 3. Tarih
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<p style='text-align: right; font-weight: bold; color: #6366f1;'>2022</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 280,
-            width: leftColumnWidth,
-            height: 40,
-            fontSize: 16,
-            color: "#6366f1",
-          },
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h4>Önemli Olay 3</h4><p>Açıklama ve detaylar...</p>",
-            x: rightColumnX,
-            y: settings.pageMarginTop + 280,
-            width: rightColumnWidth,
-            height: 80,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
           },
         ],
         images: [],
@@ -1460,17 +1465,17 @@ export const pageTemplates = {
 
   // Adım adım rehber şablonu
   stepByStep: {
-    name: "Adım Adım Rehber",
-    description: "Numaralı talimatlar",
+    name: "Adım Adım Rehber (Modern)",
+    description: "Net ve profesyonel talimatlar",
     icon: "🔢",
     category: "basic",
-    features: ["Adımlar", "Görsel", "Açıklama"],
+    features: ["Büyük Numaralandırma", "Vurgulu Başlıklar", "Akışkan Görselleşme"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const imageWidth = 150;
-      const textX = settings.pageMarginLeft + imageWidth + 20;
-      const textWidth = contentWidth - imageWidth - 20;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const stepHeaderWidth = 60;
+      const textX = settings.pageMarginLeft + stepHeaderWidth + 20;
+      const textWidth = contentWidth - stepHeaderWidth - 20;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1480,80 +1485,52 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Adım Adım Rehber</h2>",
+            html: '<h2 style="text-align: center; margin: 0; font-weight: 800; color: #1e293b;">UYGULAMA REHBERİ</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
           },
           // Adım 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3 style='color: #10b981;'>① Adım 1</h3><p>İlk adımın açıklaması...</p>",
+            html: '<div style="background: #be123c; color: white; width: 60px; height: 60px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">01</div>',
+            x: settings.pageMarginLeft,
+            y: settings.pageMarginTop + 80,
+            width: 60,
+            height: 60,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<h3 style="margin: 0; color: #be123c; border-left: 4px solid #be123c; padding-left: 15px;">HAZIRLIK AŞAMASI</h3><p style="margin-top: 10px; line-height: 1.6; font-size: 13px;">Gerekli tüm materyallerin toplanması ve çalışma alanının düzenlenmesi sürecidir.</p>',
             x: textX,
             y: settings.pageMarginTop + 80,
             width: textWidth,
-            height: 120,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            height: 100,
           },
           // Adım 2
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3 style='color: #10b981;'>② Adım 2</h3><p>İkinci adımın açıklaması...</p>",
-            x: textX,
+            html: '<div style="background: #334155; color: white; width: 60px; height: 60px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">02</div>',
+            x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 220,
-            width: textWidth,
-            height: 120,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            width: 60,
+            height: 60,
           },
-          // Adım 3
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3 style='color: #10b981;'>③ Adım 3</h3><p>Üçüncü adımın açıklaması...</p>",
+            html: '<h3 style="margin: 0; color: #334155; border-left: 4px solid #334155; padding-left: 15px;">UYGULAMA VE TEST</h3><p style="margin-top: 10px; line-height: 1.6; font-size: 13px;">Projenin hayata geçirilmesi ve standartlara uygunluk testlerinin yapılması adımıdır.</p>',
             x: textX,
-            y: settings.pageMarginTop + 360,
-            width: textWidth,
-            height: 120,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-        ],
-        images: [
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80,
-            width: imageWidth,
-            height: 120,
-          },
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 220,
-            width: imageWidth,
-            height: 120,
-          },
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 360,
-            width: imageWidth,
-            height: 120,
+            width: textWidth,
+            height: 100,
           },
         ],
+        images: [],
         tables: [],
         documentContent: "",
         pageSettings: {
@@ -1568,15 +1545,14 @@ export const pageTemplates = {
 
   // Portfolyo şablonu
   portfolio: {
-    name: "Portfolyo",
-    description: "Proje vitrin sayfası",
+    name: "Portfolyo (Vitrin)",
+    description: "Modern proje ve çalışma vitrini",
     icon: "💼",
     category: "creative",
-    features: ["Proje", "Görsel", "Açıklama"],
+    features: ["Kart Tasarımı", "Vurgulu Başlıklar", "Temizlik & Düzen"],
     create: (id, settings) => {
-      const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
-      const projectHeight = 200;
-      
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1586,39 +1562,21 @@ export const pageTemplates = {
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h2 style='text-align: center;'>Portfolyo</h2>",
+            html: '<h2 style="text-align: center; margin: 0; font-weight: 800; color: #1e293b; letter-spacing: 3px;">SEÇKİN PROJELER</h2>',
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop,
             width: contentWidth,
             height: 60,
-            fontSize: settings.titleFontSize,
-            color: settings.titleColor,
           },
-          // Proje 1 açıklama
+          // Proje Kartı 1
           {
             id: crypto.randomUUID(),
             type: "text",
-            html: "<h3>Proje Adı 1</h3><p>Kısa proje açıklaması ve kullanılan teknolojiler...</p>",
+            html: '<div style="background: rgba(248, 250, 252, 0.8); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;"><h3 style="margin: 0; color: #be123c;">ENDÜSTRİYEL TASARIM X</h3><p style="margin-top: 10px; line-height: 1.6; font-size: 13px; color: #475569;">Yenilikçi yaklaşımlar ve estetik detaylarla harmanlanmış, kullanıcı odaklı bir ürün geliştirme süreci. Minimalist çizgiler ve sürdürülebilir materyal kullanımı odak noktasıdır.</p></div>',
             x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + projectHeight + 10,
+            y: settings.pageMarginTop + 400,
             width: contentWidth,
-            height: 80,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
-          },
-          // Proje 2 açıklama
-          {
-            id: crypto.randomUUID(),
-            type: "text",
-            html: "<h3>Proje Adı 2</h3><p>Kısa proje açıklaması ve kullanılan teknolojiler...</p>",
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + projectHeight + 100 + projectHeight + 10,
-            width: contentWidth,
-            height: 80,
-            fontSize: settings.bodyFontSize,
-            color: settings.bodyColor,
-            lineHeight: settings.bodyLineHeight,
+            height: 150,
           },
         ],
         images: [
@@ -1628,15 +1586,8 @@ export const pageTemplates = {
             x: settings.pageMarginLeft,
             y: settings.pageMarginTop + 80,
             width: contentWidth,
-            height: projectHeight,
-          },
-          {
-            id: crypto.randomUUID(),
-            src: null,
-            x: settings.pageMarginLeft,
-            y: settings.pageMarginTop + 80 + projectHeight + 100,
-            width: contentWidth,
-            height: projectHeight,
+            height: 300,
+            borderRadius: 12,
           },
         ],
         tables: [],
@@ -1663,7 +1614,7 @@ export const pageTemplates = {
       const photoSize = 100;
       const textStartX = settings.pageMarginLeft + photoSize + 20;
       const textWidth = contentWidth - photoSize - 20;
-      
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1767,7 +1718,7 @@ export const pageTemplates = {
     create: (id, settings) => {
       const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
       const imageWidth = (contentWidth - 20) / 2;
-      
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1854,7 +1805,7 @@ export const pageTemplates = {
     create: (id, settings) => {
       const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
       const columnWidth = (contentWidth - 40) / 3;
-      
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1935,7 +1886,7 @@ export const pageTemplates = {
     create: (id, settings) => {
       const contentWidth = 694 - settings.pageMarginLeft - settings.pageMarginRight;
       const halfWidth = (contentWidth - 20) / 2;
-      
+
       return {
         id,
         title: `Sayfa ${id}`,
@@ -1978,6 +1929,85 @@ export const pageTemplates = {
             fontSize: settings.bodyFontSize,
             color: settings.bodyColor,
             lineHeight: settings.bodyLineHeight,
+          },
+        ],
+        images: [],
+        tables: [],
+        documentContent: "",
+        pageSettings: {
+          marginTop: settings.pageMarginTop,
+          marginBottom: settings.pageMarginBottom,
+          marginLeft: settings.pageMarginLeft,
+          marginRight: settings.pageMarginRight,
+        },
+      };
+    },
+  },
+
+  // İş/Yönetici Özeti (Business Pitch) şablonu
+  businessPitch: {
+    name: "Yönetici Özeti (Pitch)",
+    description: "Yatırımcı sunumları ve yönetici özetleri",
+    icon: "🚀",
+    category: "creative",
+    features: ["Metrik Paneli", "Vurgulu Vizyon", "Profesyonel Branding"],
+    create: (id, settings) => {
+      const contentWidth = 794 - settings.pageMarginLeft - settings.pageMarginRight;
+      const metricWidth = (contentWidth - 40) / 3;
+
+      return {
+        id,
+        title: `Sayfa ${id}`,
+        type: "content",
+        mode: "free",
+        overlays: [
+          // Header Bar
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: linear-gradient(90deg, #1e1b4b 0%, #be123c 100%); color: white; padding: 30px; border-radius: 8px;"><h1 style="margin: 0; font-weight: 900; letter-spacing: -1px;">STRATEJİK VİZYON 2026</h1><p style="margin: 10px 0 0 0; opacity: 0.8; font-size: 14px;">YATIRIMCI VE YÖNETİCİ ÖZETİ</p></div>',
+            x: settings.pageMarginLeft,
+            y: settings.pageMarginTop,
+            width: contentWidth,
+            height: 120,
+          },
+          // Ana Vizyon
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="border-left: 5px solid #be123c; padding-left: 20px;"><h2 style="margin: 0; color: #1e1b4b;">BÜYÜME STRATEJİSİ</h2><p style="margin-top: 15px; line-height: 1.7; font-size: 15px; color: #334155;">Gelecek 24 ay içinde pazar payımızı %30 artırmayı ve global operasyonlarımızı 5 yeni bölgeye yaymayı hedefliyoruz. Teknolojik altyapımız, ölçeklenebilir bir büyüme için optimize edilmiştir.</p></div>',
+            x: settings.pageMarginLeft,
+            y: settings.pageMarginTop + 150,
+            width: contentWidth,
+            height: 180,
+          },
+          // Metrik Kutuları
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;"><span style="display: block; font-size: 24px; font-weight: 900; color: #be123c;">%45</span><span style="font-size: 12px; color: #64748b;">ROI ARTIŞI</span></div>',
+            x: settings.pageMarginLeft,
+            y: settings.pageMarginTop + 350,
+            width: metricWidth,
+            height: 80,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;"><span style="display: block; font-size: 24px; font-weight: 900; color: #be123c;">1.2M</span><span style="font-size: 12px; color: #64748b;">AKTİF KULLANICI</span></div>',
+            x: settings.pageMarginLeft + metricWidth + 20,
+            y: settings.pageMarginTop + 350,
+            width: metricWidth,
+            height: 80,
+          },
+          {
+            id: crypto.randomUUID(),
+            type: "text",
+            html: '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;"><span style="display: block; font-size: 24px; font-weight: 900; color: #be123c;">A+</span><span style="font-size: 12px; color: #64748b;">GÜVENLİK SKORU</span></div>',
+            x: settings.pageMarginLeft + (metricWidth + 20) * 2,
+            y: settings.pageMarginTop + 350,
+            width: metricWidth,
+            height: 80,
           },
         ],
         images: [],

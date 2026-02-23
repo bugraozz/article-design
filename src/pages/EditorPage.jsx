@@ -53,6 +53,34 @@ export default function EditorPage() {
   const pdfViewerMode = location.state?.mode === 'pdf-viewer';
   const pdfFile = location.state?.pdfFile;
   const pdfFileName = location.state?.fileName;
+  const pdfCleanupToken = location.state?.pdfCleanupToken;
+
+  useEffect(() => {
+    if (!pdfViewerMode || !pdfCleanupToken) return;
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+    const cleanupUrl = `${backendUrl.replace(/\/$/, '')}/api/pdf/session-end?cleanup_token=${encodeURIComponent(pdfCleanupToken)}`;
+    let sent = false;
+
+    const cleanupPdfSession = () => {
+      if (sent) return;
+      sent = true;
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(cleanupUrl, new Blob([], { type: 'application/json' }));
+        return;
+      }
+
+      fetch(cleanupUrl, { method: 'POST', keepalive: true }).catch(() => {});
+    };
+
+    window.addEventListener('beforeunload', cleanupPdfSession);
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanupPdfSession);
+      cleanupPdfSession();
+    };
+  }, [pdfViewerMode, pdfCleanupToken]);
 
   const [pages, setPages] = useState(() => {
     // Proje kodundan yükleme
@@ -239,10 +267,12 @@ export default function EditorPage() {
               // Makale ayarlarını DAIMA uygula
               color: newSettings.bodyColor,
               fontSize: newSettings.bodyFontSize,
+              fontFamily: newSettings.bodyFontFamily,
               lineHeight: newSettings.bodyLineHeight,
               textIndent: newSettings.paragraphIndent,
               // Başlık ayarları
               titleFontSize: newSettings.titleFontSize,
+              titleFontFamily: newSettings.titleFontFamily,
               titleColor: newSettings.titleColor,
             };
           }
@@ -301,6 +331,28 @@ export default function EditorPage() {
           : p
       )
     );
+  };
+
+  const toggleImageShape = () => {
+    const id = contextMenu.targetId;
+    if (!id || !activePage) return;
+
+    const image = activePage.images?.find((img) => img.id === id);
+    if (!image) return;
+
+    const isCurrentlyCircle = image.borderRadius === 50;
+    const newBorderRadius = isCurrentlyCircle ? 4 : 50;
+
+    // Eğer daire yapılıyorsa genişlik/yükseklik eşitle
+    const partial = { borderRadius: newBorderRadius };
+    if (!isCurrentlyCircle) {
+      const size = Math.min(image.width, image.height);
+      partial.width = size;
+      partial.height = size;
+    }
+
+    handleImageChange(id, partial);
+    setContextMenu((prev) => ({ ...prev, visible: false }));
   };
 
   const handleTableChange = (id, partial) => {
@@ -655,10 +707,12 @@ export default function EditorPage() {
                 rotate: 0,
                 // Makale ayarlarını uygula
                 fontSize: articleSettings.bodyFontSize,
+                fontFamily: articleSettings.bodyFontFamily,
                 color: articleSettings.bodyColor,
                 lineHeight: articleSettings.bodyLineHeight,
                 textIndent: articleSettings.paragraphIndent,
                 titleFontSize: articleSettings.titleFontSize,
+                titleFontFamily: articleSettings.titleFontFamily,
                 titleColor: articleSettings.titleColor,
               },
             ],
@@ -740,22 +794,17 @@ export default function EditorPage() {
     setShowTableModal(false);
   };
 
-  const addPage = (templateKey = "blank") => {
-    const newId = pages.length ? pages[pages.length - 1].id + 1 : 1;
+  const addPage = (templateKey = "blank", insertIndex = -1) => {
+    const newId = Date.now(); // UUID-like unique ID instead of simple auto-increment to avoid conflicts during reordering
 
     setPages((prev) => {
       // Şablondan sayfa oluştur
       const template = pageTemplates[templateKey];
-      if (template) {
-        return [...prev, template.create(newId, articleSettings)];
-      }
-
-      // Fallback: Boş sayfa
-      return [
-        ...prev,
-        {
+      const newPage = template
+        ? template.create(newId, articleSettings)
+        : {
           id: newId,
-          title: `Sayfa ${newId}`,
+          title: `Sayfa`,
           type: "content",
           mode: "free",
           overlays: [],
@@ -768,8 +817,15 @@ export default function EditorPage() {
             marginLeft: articleSettings.pageMarginLeft,
             marginRight: articleSettings.pageMarginRight,
           },
-        },
-      ];
+        };
+
+      const newPages = [...prev];
+      if (insertIndex !== -1 && insertIndex < newPages.length) {
+        newPages.splice(insertIndex + 1, 0, newPage);
+      } else {
+        newPages.push(newPage);
+      }
+      return newPages;
     });
 
     setActivePageId(newId);
@@ -1415,6 +1471,7 @@ export default function EditorPage() {
                       width: displayWidth,
                       height: displayHeight,
                       angle: 0,
+                      borderRadius: 4,
                     },
                   ],
                 }
@@ -1516,6 +1573,7 @@ export default function EditorPage() {
                     width: overlay.width,
                     height: overlay.height,
                     angle: 0,
+                    borderRadius: 4,
                   },
                 ],
               }
@@ -1595,10 +1653,12 @@ export default function EditorPage() {
       style: {
         color: overlay.color,
         fontSize: overlay.fontSize,
+        fontFamily: overlay.fontFamily,
         lineHeight: overlay.lineHeight,
         textIndent: overlay.textIndent,
         titleColor: overlay.titleColor,
         titleFontSize: overlay.titleFontSize,
+        titleFontFamily: overlay.titleFontFamily,
       },
     });
 
@@ -1801,35 +1861,36 @@ export default function EditorPage() {
                       }
                     }, 50);
                   }}
-                  onAddPage={addPage}
-                  onChangePageMode={(pageId, newMode) => {
-                    setPages((prev) =>
-                      prev.map((p) =>
-                        p.id === pageId
-                          ? { ...p, mode: newMode }
-                          : p
-                      )
-                    );
-                  }}
+                  onAddPage={(templateKey, insertIndex) => addPage(templateKey, insertIndex)}
                   onDeletePage={(pageId) => {
-                    // En az 1 sayfa kalmalı
                     if (pages.length <= 1) {
                       alert('Son sayfayı silemezsiniz!');
                       return;
                     }
 
-                    // Sayfayı sil
-                    setPages((prev) => prev.filter((p) => p.id !== pageId));
+                    const currentIndex = pages.findIndex((p) => p.id === pageId);
+                    const filteredPages = pages.filter((p) => p.id !== pageId);
+                    setPages(filteredPages);
 
-                    // Aktif sayfa silindiyse, bir önceki sayfayı seç
                     if (activePageId === pageId) {
-                      const currentIndex = pages.findIndex((p) => p.id === pageId);
-                      const newActivePage = pages[currentIndex - 1] || pages[currentIndex + 1];
-                      if (newActivePage) {
-                        setActivePageId(newActivePage.id);
+                      const nextActivePage = filteredPages[currentIndex] || filteredPages[currentIndex - 1];
+                      if (nextActivePage) {
+                        setActivePageId(nextActivePage.id);
                       }
                     }
                   }}
+                  onMovePage={(pageId, direction) => {
+                    const index = pages.findIndex(p => p.id === pageId);
+                    if (index === -1) return;
+                    if (direction === 'up' && index === 0) return;
+                    if (direction === 'down' && index === pages.length - 1) return;
+
+                    const newPages = [...pages];
+                    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+                    [newPages[index], newPages[targetIndex]] = [newPages[targetIndex], newPages[index]];
+                    setPages(newPages);
+                  }}
+                  onReorderPages={(newPages) => setPages(newPages)}
                 />
               </div>
             )}
@@ -2222,6 +2283,16 @@ export default function EditorPage() {
                       </div>
                     )}
 
+                    {/* Sayfa Numarası Footer (Dinamik) */}
+                    <div
+                      className="absolute bottom-6 left-0 w-full flex justify-center pointer-events-none z-[100]"
+                      style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'bottom center' }}
+                    >
+                      <div className="px-4 py-1 bg-white/60 backdrop-blur-sm rounded-full text-[11px] font-bold text-slate-400 border border-slate-200/50 tracking-[2px]">
+                        — {pages.findIndex(p => p.id === page.id) + 1} —
+                      </div>
+                    </div>
+
                     {/* Serbest Mod Canvas */}
                     {page.mode === "free" && (
                       <PageCanvas
@@ -2266,7 +2337,8 @@ export default function EditorPage() {
                           transform: `scale(${zoom / 100})`,
                           // Sayfa boyutları sabit
                           width: 794,
-                          height: 1123
+                          height: 1123,
+                          position: 'relative'
                         }}
                       >
                         {/* Eğer import edilmiş PDF/Word ise (absolute positioning HTML içeriyorsa) */}
@@ -2870,8 +2942,33 @@ export default function EditorPage() {
                     onMouseOut={(e) => e.currentTarget.style.background = 'none'}
                   >
                     <span>🖼️</span>
-                    <span>Görsel Ekle</span>
+                    <span>Görseli Değiştir / Ekle</span>
                   </button>
+
+                  {contextMenu.targetType === 'image' && (
+                    <button
+                      onClick={toggleImageShape}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        textAlign: 'left',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        color: '#0ea5e9',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f0f9ff'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+                    >
+                      <span>⚪/⬜</span>
+                      <span>Şekli Değiştir (Daire/Kare)</span>
+                    </button>
+                  )}
 
                   <div style={{ height: '1px', background: '#e5e7eb', margin: '4px 0' }}></div>
 

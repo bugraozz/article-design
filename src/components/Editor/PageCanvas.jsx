@@ -305,10 +305,12 @@ export default function PageCanvas({
               height={item.height}
               rotate={item.rotate}
               fontSize={item.fontSize}
+              fontFamily={item.fontFamily}
               color={item.color}
               lineHeight={item.lineHeight}
               textIndent={item.textIndent}
               titleFontSize={item.titleFontSize}
+              titleFontFamily={item.titleFontFamily}
               titleColor={item.titleColor}
               autoResize={item.autoResize}
               locked={item.locked}

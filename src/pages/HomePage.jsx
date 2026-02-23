@@ -98,7 +98,14 @@ export default function HomePage() {
         if (!response.ok) throw new Error(`Upload failed: ${response.statusText}`);
 
         const result = await response.json();
-        nav("/editor", { state: { pdfFile: result.url, fileName: file.name, mode: 'pdf-viewer' } });
+        nav("/editor", {
+          state: {
+            pdfFile: result.url,
+            fileName: file.name,
+            mode: 'pdf-viewer',
+            pdfCleanupToken: result.cleanupToken,
+          }
+        });
       }
 
     } catch (error) {
@@ -239,7 +246,7 @@ export default function HomePage() {
                 onKeyDown={(e) => e.key === 'Enter' && loadProject()}
                 maxLength={8}
                 placeholder="KOD"
-                className="w-24 h-10 bg-white/10 border border-white/10 rounded-lg px-2 text-center text-sm font-mono font-bold text-white placeholder:text-neutral-600 focus:outline-none focus:border-rose-500 transition-all uppercase"
+                className="w-24 h-10 bg-white/10 border border-green-400 rounded-lg px-2 text-center text-sm font-mono font-bold text-white placeholder:text-neutral-600 focus:outline-none focus:border-rose-500 transition-all uppercase"
               />
               <button
                 onClick={loadProject}

@@ -359,6 +359,7 @@ canvas {
   margin: 0 !important;
   padding: 0 !important;
   text-indent: inherit !important;
+  font-family: var(--paragraph-font-family, inherit) !important;
 }
 
 .text-overlay-display h1,
@@ -369,6 +370,7 @@ canvas {
 .text-overlay-display h6 {
   font-size: var(--heading-font-size, inherit) !important;
   color: var(--heading-color, inherit) !important;
+  font-family: var(--heading-font-family, inherit) !important;
   margin: 0 !important;
   padding: 0 !important;
   line-height: inherit !important;

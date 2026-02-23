@@ -5,10 +5,9 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
-import { TextStyle } from "@tiptap/extension-text-style";
-import Color from "@tiptap/extension-color";
 import TextAlign from "@tiptap/extension-text-align";
 import FontSize from "../extensions/FontSize";
+import InlineColor from "../extensions/InlineColor";
 import { Table } from "@tiptap/extension-table";
 import { TableRow } from "@tiptap/extension-table-row";
 import { TableHeader } from "@tiptap/extension-table-header";
@@ -33,8 +32,7 @@ export default function TiptapEditor({ initialContent, onChange, onEditorReady, 
           class: 'tiptap-highlight',
         },
       }),
-      TextStyle,
-      Color,
+      InlineColor,
       FontSize,
       TextAlign.configure({ 
         types: ["paragraph", "heading"],

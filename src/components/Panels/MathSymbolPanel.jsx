@@ -1,53 +1,51 @@
 /**
- * Math Symbol Panel
- * Matematik semboller paneli - KaTeX Önizlemeli
+ * Math Symbol Panel (Modal Version)
+ * Matematik semboller paneli - KaTeX Önizlemeli & Modal Tasarımlı
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Sigma, Sparkles, Hash } from "lucide-react";
 import katex from "katex";
 
 const MATH_SYMBOLS = [
-  { name: "Plus", latex: "+", category: "Basic" },
-  { name: "Minus", latex: "-", category: "Basic" },
-  { name: "Multiply", latex: "\\times", category: "Basic" },
-  { name: "Divide", latex: "\\div", category: "Basic" },
-  { name: "Equal", latex: "=", category: "Basic" },
-  { name: "Not Equal", latex: "\\neq", category: "Basic" },
-  { name: "Less Than", latex: "<", category: "Comparison" },
-  { name: "Greater Than", latex: ">", category: "Comparison" },
-  { name: "Less or Equal", latex: "\\leq", category: "Comparison" },
-  { name: "Greater or Equal", latex: "\\geq", category: "Comparison" },
-  { name: "Approximately", latex: "\\approx", category: "Comparison" },
-  { name: "Plus Minus", latex: "\\pm", category: "Basic" },
-  { name: "Pi", latex: "\\pi", category: "Constants" },
-  { name: "Euler", latex: "e", category: "Constants" },
-  { name: "Infinity", latex: "\\infty", category: "Constants" },
-  { name: "Alpha", latex: "\\alpha", category: "Greek Letters" },
-  { name: "Beta", latex: "\\beta", category: "Greek Letters" },
-  { name: "Gamma", latex: "\\gamma", category: "Greek Letters" },
-  { name: "Delta", latex: "\\delta", category: "Greek Letters" },
-  { name: "Epsilon", latex: "\\epsilon", category: "Greek Letters" },
-  { name: "Theta", latex: "\\theta", category: "Greek Letters" },
-  { name: "Lambda", latex: "\\lambda", category: "Greek Letters" },
-  { name: "Mu", latex: "\\mu", category: "Greek Letters" },
-  { name: "Sigma", latex: "\\sigma", category: "Greek Letters" },
-  { name: "Omega", latex: "\\omega", category: "Greek Letters" },
-  { name: "Square Root", latex: "\\sqrt{x}", category: "Functions" },
-  { name: "Fraction", latex: "\\frac{a}{b}", category: "Functions" },
-  { name: "Power", latex: "x^{n}", category: "Functions" },
-  { name: "Subscript", latex: "x_{n}", category: "Functions" },
-  { name: "Integral", latex: "\\int", category: "Operators" },
-  { name: "Sum", latex: "\\sum", category: "Operators" },
-  { name: "Product", latex: "\\prod", category: "Operators" },
-  { name: "Limit", latex: "\\lim", category: "Operators" },
-  { name: "Partial", latex: "\\partial", category: "Operators" },
+  { name: "Artı", latex: "+", category: "Temel" },
+  { name: "Eksi", latex: "-", category: "Temel" },
+  { name: "Çarpı", latex: "\\times", category: "Temel" },
+  { name: "Bölü", latex: "\\div", category: "Temel" },
+  { name: "Eşittir", latex: "=", category: "Temel" },
+  { name: "Eşit Değil", latex: "\\neq", category: "Temel" },
+  { name: "Küçüktür", latex: "<", category: "Karşılaştırma" },
+  { name: "Büyüktür", latex: ">", category: "Karşılaştırma" },
+  { name: "Küçük Eşit", latex: "\\leq", category: "Karşılaştırma" },
+  { name: "Büyük Eşit", latex: "\\geq", category: "Karşılaştırma" },
+  { name: "Yaklaşık", latex: "\\approx", category: "Karşılaştırma" },
+  { name: "Artı Eksi", latex: "\\pm", category: "Temel" },
+  { name: "Pi", latex: "\\pi", category: "Sabitler" },
+  { name: "Euler", latex: "e", category: "Sabitler" },
+  { name: "Sonsuz", latex: "\\infty", category: "Sabitler" },
+  { name: "Alfa", latex: "\\alpha", category: "Yunan Harfleri" },
+  { name: "Beta", latex: "\\beta", category: "Yunan Harfleri" },
+  { name: "Gama", latex: "\\gamma", category: "Yunan Harfleri" },
+  { name: "Delta", latex: "\\delta", category: "Yunan Harfleri" },
+  { name: "Epsilon", latex: "\\epsilon", category: "Yunan Harfleri" },
+  { name: "Teta", latex: "\\theta", category: "Yunan Harfleri" },
+  { name: "Lambda", latex: "\\lambda", category: "Yunan Harfleri" },
+  { name: "Mü", latex: "\\mu", category: "Yunan Harfleri" },
+  { name: "Sigma", latex: "\\sigma", category: "Yunan Harfleri" },
+  { name: "Omega", latex: "\\omega", category: "Yunan Harfleri" },
+  { name: "Karekök", latex: "\\sqrt{x}", category: "Fonksiyonlar" },
+  { name: "Kesir", latex: "\\frac{a}{b}", category: "Fonksiyonlar" },
+  { name: "Üs", latex: "x^{n}", category: "Fonksiyonlar" },
+  { name: "Alt İndis", latex: "x_{n}", category: "Fonksiyonlar" },
+  { name: "İntegral", latex: "\\int", category: "Operatörler" },
+  { name: "Toplam", latex: "\\sum", category: "Operatörler" },
+  { name: "Çarpım", latex: "\\prod", category: "Operatörler" },
+  { name: "Limit", latex: "\\lim", category: "Operatörler" },
+  { name: "Kısmi Türev", latex: "\\partial", category: "Operatörler" },
 ];
 
-// Symbol Preview Component
 function SymbolPreview({ latex }) {
   const ref = useRef(null);
-
   useEffect(() => {
     if (ref.current) {
       try {
@@ -60,193 +58,112 @@ function SymbolPreview({ latex }) {
       }
     }
   }, [latex]);
-
   return <span ref={ref} />;
 }
 
-export default function MathSymbolPanel({ onInsert = () => {}, onClose = () => {} }) {
-  const [selectedCategory, setSelectedCategory] = useState("Basic");
+export default function MathSymbolPanel({ onInsert = () => { }, onClose = () => { } }) {
+  const [selectedCategory, setSelectedCategory] = useState("Temel");
 
   const categories = [...new Set(MATH_SYMBOLS.map((s) => s.category))];
   const filteredSymbols = MATH_SYMBOLS.filter((s) => s.category === selectedCategory);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: "380px",
-        background: "white",
-        boxShadow: "-2px 0 8px rgba(0,0,0,0.1)",
-        zIndex: 999,
-        overflow: "auto",
-        display: "flex",
-        flexDirection: "column",
-        borderLeft: "1px solid #e5e7eb",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "12px 16px",
-          borderBottom: "1px solid #e5e7eb",
-          background: "#f9fafb",
-        }}
-      >
-        <h3 style={{ 
-          margin: 0, 
-          fontSize: "16px", 
-          fontWeight: "600",
-          color: "#374151",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px"
-        }}>
-          <span>📐</span>
-          <span>Matematik Sembolleri</span>
-        </h3>
-        <button
-          onClick={onClose}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "4px",
-            display: "flex",
-            alignItems: "center",
-            borderRadius: "4px",
-            transition: "all 0.15s",
-          }}
-          onMouseOver={(e) => e.currentTarget.style.background = "#e5e7eb"}
-          onMouseOut={(e) => e.currentTarget.style.background = "none"}
-        >
-          <X size={20} color="#6b7280" />
-        </button>
-      </div>
+    <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center z-[100] animate-in fade-in duration-300">
+      <div className="bg-slate-900/95 backdrop-blur-2xl border border-slate-700/50 rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden text-slate-200 mx-4">
 
-      {/* Category Tabs */}
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          padding: "10px 12px",
-          borderBottom: "1px solid #e5e7eb",
-          overflow: "auto",
-          background: "white",
-        }}
-      >
-        {categories.map((cat) => (
+        {/* Header - Premium Gradient */}
+        <div className="bg-gradient-to-r from-violet-600 to-purple-700 p-6 flex items-center justify-between shadow-lg relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-xl border border-white/30 shadow-inner">
+              <Sigma size={24} className="text-white drop-shadow-md" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-white tracking-tight uppercase">Matematik Sembolleri</h3>
+              <p className="text-violet-100/70 text-xs font-bold tracking-widest uppercase">Sembol Kütüphanesi</p>
+            </div>
+          </div>
           <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            style={{
-              padding: "6px 12px",
-              fontSize: "12px",
-              fontWeight: "500",
-              background: selectedCategory === cat 
-                ? "#3b82f6" 
-                : "#f3f4f6",
-              color: selectedCategory === cat ? "white" : "#4b5563",
-              border: selectedCategory === cat ? "none" : "1px solid #e5e7eb",
-              borderRadius: "6px",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              transition: "all 0.15s",
-            }}
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 text-white/70 hover:text-white rounded-xl transition-all duration-300"
           >
-            {cat}
+            <X size={24} />
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Symbols Grid */}
-      <div
-        style={{
-          flex: 1,
-          padding: "12px",
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "8px",
-          overflow: "auto",
-          alignContent: "start",
-          background: "#fafafa",
-        }}
-      >
-        {filteredSymbols.map((symbol) => (
+        {/* Categories Tab */}
+        <div className="p-4 bg-slate-800/50 border-b border-slate-700/50">
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar custom-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border-2 ${selectedCategory === cat
+                    ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white border-transparent shadow-lg shadow-violet-500/20 scale-105"
+                    : "bg-slate-800/50 text-slate-400 border-slate-700/50 hover:border-violet-500/30 hover:text-slate-200 hover:bg-slate-700"
+                  }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Symbols Grid */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-900/50">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {filteredSymbols.map((symbol) => (
+              <button
+                key={symbol.latex}
+                onClick={() => {
+                  onInsert(symbol.latex);
+                  onClose();
+                }}
+                className="group relative flex flex-col items-center justify-center p-4 bg-slate-800/40 border-2 border-slate-700/30 rounded-2xl transition-all duration-300 hover:border-violet-500/50 hover:bg-violet-500/10 hover:shadow-2xl hover:shadow-violet-900/20 hover:-translate-y-1.5 active:translate-y-0"
+                title={symbol.name}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-purple-700/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+
+                <div className="h-10 flex items-center justify-center text-3xl text-slate-200 group-hover:text-white transition-colors relative z-10 font-bold scale-[1.2]">
+                  <SymbolPreview latex={symbol.latex} />
+                </div>
+
+                <div className="mt-4 text-center relative z-10 w-full">
+                  <div className="text-[9px] font-black text-slate-500 group-hover:text-violet-300 uppercase tracking-tight truncate px-1">
+                    {symbol.name}
+                  </div>
+                </div>
+
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Sparkles size={10} className="text-violet-400" />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 text-center relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_-20%,rgba(139,92,246,0.1),transparent)]"></div>
+            <div className="relative z-10 flex flex-col items-center gap-3">
+              <div className="p-3 bg-violet-500/20 backdrop-blur-md rounded-2xl text-violet-400 border border-violet-500/20 shadow-inner">
+                <Hash size={20} className="animate-pulse" />
+              </div>
+              <p className="text-xs font-black text-white uppercase tracking-widest">Profesyonel Mod</p>
+              <p className="text-[10px] text-slate-400 font-medium leading-relaxed max-w-[280px]">
+                Sembolü belgeye aktarmak için üzerine tıklayın. Belgenizin neresinde eklenmesini istiyorsanız imlecinizi orada bırakın.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="p-6 bg-slate-950/50 border-t border-slate-800 flex justify-end">
           <button
-            key={symbol.latex}
-            onClick={() => {
-              onInsert(symbol.latex);
-              onClose();
-            }}
-            title={symbol.name}
-            style={{
-              padding: "16px 12px",
-              background: "white",
-              border: "2px solid #e5e7eb",
-              borderRadius: "8px",
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "8px",
-              transition: "all 0.15s",
-              minHeight: "100px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#eff6ff";
-              e.currentTarget.style.borderColor = "#3b82f6";
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "white";
-              e.currentTarget.style.borderColor = "#e5e7eb";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={onClose}
+            className="px-10 py-3.5 border border-slate-700 rounded-2xl hover:bg-slate-800 text-slate-400 hover:text-white transition-all duration-300 font-black text-xs uppercase tracking-[0.2em]"
           >
-            {/* KaTeX Rendered Symbol */}
-            <div style={{ 
-              fontSize: "32px", 
-              fontWeight: "bold",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              minHeight: "40px",
-              color: "#1f2937",
-            }}>
-              <SymbolPreview latex={symbol.latex} />
-            </div>
-            
-            {/* Symbol Name */}
-            <div style={{ 
-              fontWeight: "500", 
-              fontSize: "11px", 
-              color: "#6b7280",
-              textAlign: "center",
-            }}>
-              {symbol.name}
-            </div>
-            
-            {/* LaTeX Code */}
-            <code style={{ 
-              fontSize: "9px", 
-              color: "#9ca3af",
-              backgroundColor: "#f3f4f6",
-              padding: "2px 6px",
-              borderRadius: "3px",
-              fontFamily: "monospace",
-            }}>
-              {symbol.latex}
-            </code>
+            Kapat
           </button>
-        ))}
+        </div>
       </div>
     </div>
   );

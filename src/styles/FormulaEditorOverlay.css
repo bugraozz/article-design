@@ -103,3 +103,22 @@
     max-height: 500px;
   }
 }
+
+/* ===== RENKLI METİN DESTEĞI ===== */
+/* InlineColor extension - metin rengi her zaman görünür olmalı */
+
+/* Data attribute ile renk belirlenen span'ları destekle */
+span[data-color] {
+  /* Inline style tarafından kontrol edilir */
+}
+
+/* Inline style ile renk uygulanmış span'lar */
+span[style*="color"] {
+  color: inherit;
+  /* Style attribute tarafından kontrol edilir */
+}
+
+/* Seçimde bile renk korunmalı */
+span[data-color]::selection {
+  color: inherit;
+}

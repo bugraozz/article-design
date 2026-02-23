@@ -43,6 +43,33 @@ export default function CollaboraPage() {
     buildCollaboraUrl();
   }, [providedCollaboraUrl, fileId, accessToken]);
 
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+    const cleanupUrl = `${backendUrl.replace(/\/$/, '')}/api/collabora/session-end?access_token=${encodeURIComponent(accessToken)}`;
+    let sent = false;
+
+    const cleanupSession = () => {
+      if (sent) return;
+      sent = true;
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(cleanupUrl, new Blob([], { type: 'application/json' }));
+        return;
+      }
+
+      fetch(cleanupUrl, { method: 'POST', keepalive: true }).catch(() => {});
+    };
+
+    window.addEventListener('beforeunload', cleanupSession);
+
+    return () => {
+      window.removeEventListener('beforeunload', cleanupSession);
+      cleanupSession();
+    };
+  }, [accessToken]);
+
   if (!iframeSrc) {
     return (
       <div className="p-8">

@@ -1,10 +1,9 @@
 // src/components/Editor/DocumentToolbar.jsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Bold,
   Italic,
   Underline,
-  Highlighter,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -24,6 +23,8 @@ import {
   Trash2,
   Merge,
   Split,
+  Palette,
+  Baseline,
 } from "lucide-react";
 
 export default function DocumentToolbar({
@@ -43,6 +44,8 @@ export default function DocumentToolbar({
   showGuides,
   setShowGuides,
 }) {
+  const [highlightMenuOpen, setHighlightMenuOpen] = useState(false);
+
   if (!editor) return null;
 
   // Debug grid props
@@ -163,20 +166,96 @@ export default function DocumentToolbar({
         >
           <Underline size={16} />
         </button>
+      </div>
+
+      <div className="toolbar-separator"></div>
+
+      {/* Metin Rengi */}
+      <div className="toolbar-group">
+        <div className="relative group">
+          <button
+            className="toolbar-btn flex flex-col items-center justify-center pt-1"
+            title="Metin Rengi"
+            onClick={(e) => {
+              e.currentTarget.nextElementSibling?.click();
+            }}
+          >
+            <Baseline size={16} />
+            <div
+              className="w-3 h-0.5 mt-0.5 rounded-full"
+              style={{ backgroundColor: editor.getAttributes('inlineColor').color || '#000000' }}
+            ></div>
+          </button>
+          <input
+            type="color"
+            value={editor.getAttributes('inlineColor').color || '#000000'}
+            onChange={(e) => {
+              editor.chain().focus().setInlineColor(e.target.value).run();
+            }}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            title="Metin Rengi Seç"
+          />
+        </div>
+
+        <div className="relative">
+          <button
+            className="toolbar-btn flex flex-col items-center justify-center pt-1"
+            title="Vurgu Rengi"
+            onClick={() => setHighlightMenuOpen(!highlightMenuOpen)}
+          >
+            <Palette size={16} className="text-amber-500" />
+            <div
+              className="w-3 h-0.5 mt-0.5 rounded-full"
+              style={{ backgroundColor: editor.getAttributes('highlight').color || '#fef08a' }}
+            ></div>
+          </button>
+
+          {highlightMenuOpen && (
+            <div
+              className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-lg p-2 flex gap-1 z-[9999]"
+              onMouseLeave={() => setHighlightMenuOpen(false)}
+            >
+              {[
+                '#fef08a',
+                '#bbf7d0',
+                '#bfdbfe',
+                '#fbcfe8',
+                '#fed7aa',
+                '#a5f3fc',
+              ].map(color => (
+                <button
+                  key={color}
+                  onClick={() => {
+                    editor.chain().focus().setHighlight({ color }).run();
+                    setHighlightMenuOpen(false);
+                  }}
+                  className="w-6 h-6 rounded border border-slate-200 hover:scale-110 transition-transform"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+              <div className="w-[1px] h-6 bg-slate-200 mx-1"></div>
+              <button
+                onClick={() => {
+                  editor.chain().focus().unsetHighlight().run();
+                  setHighlightMenuOpen(false);
+                }}
+                className="w-6 h-6 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-100"
+                title="Vurguyu Kaldır"
+              >
+                <div className="w-4 h-[1px] bg-red-500 rotate-45"></div>
+              </button>
+            </div>
+          )}
+        </div>
+
         <button
           onClick={() => {
-            console.log('🟠 Highlight düğmesine basıldı');
-            console.log('🟠 Highlight extension:', editor.extensionManager.extensions.find(e => e.name === 'highlight'));
-            console.log('🟠 Şu an highlight aktif mi:', editor.isActive('highlight'));
-            console.log('🟠 Seçili alan:', editor.state.selection);
-            editor.chain().focus().toggleHighlight().run();
-            console.log('🟠 İşlem sonrası highlight aktif mi:', editor.isActive('highlight'));
-            console.log('🟠 HTML:', editor.getHTML());
+            editor.chain().focus().unsetInlineColor().unsetHighlight().run();
           }}
-          className={`toolbar-btn ${editor.isActive('highlight') ? 'active' : ''}`}
-          title="Vurgula"
+          className="toolbar-btn text-gray-400 hover:text-red-500"
+          title="Renkleri Temizle"
         >
-          <Highlighter size={16} />
+          <Trash2 size={14} />
         </button>
       </div>
 
